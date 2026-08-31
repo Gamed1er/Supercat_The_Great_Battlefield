@@ -5,20 +5,26 @@ using UnityEngine;
 [RequireComponent(typeof(CircleCollider2D))]
 [RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(Animator))]
-public class PlayerBase : MonoBehaviour, IDamageable {
+public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
     public PlayerStats stats;
     protected ISkill normalAttack;
     protected ISkill dashSkill;
     protected ISkill ultimateSkill;
 
     public GameObject hitEffectPrefab; // 受到傷害時的特效,免傷時不會播放
+    public float knockbackDuration = 0.3f; // 被擊退時的硬直時間
 
     protected Rigidbody2D rb;
     SpriteRenderer spriteRenderer;
     Animator animator;
     Vector2 moveInput;
+    KnockbackState knockback;
 
     public Vector2 FacingDirection { get; private set; } = Vector2.right;
+    public bool IsKnockedBack => knockback.IsKnockedBack;
+
+    // 終結技衝撞過程中完全免疫傷害,擊退也一併免疫(見 Q15:免傷時不該還會被打飛)
+    protected virtual bool CanBeKnockedBack => !ultimateSkill.IsActive;
 
     // 給 UI 讀取狀態用
     public float Health => stats.Health;
@@ -35,6 +41,7 @@ public class PlayerBase : MonoBehaviour, IDamageable {
 
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
+        knockback = new KnockbackState(rb);
     }
 
     public virtual void Update() {
@@ -44,6 +51,8 @@ public class PlayerBase : MonoBehaviour, IDamageable {
         if (moveInput.x > 0) spriteRenderer.flipX = false;
         else if (moveInput.x < 0) spriteRenderer.flipX = true;
 
+        if (IsKnockedBack) return; // 硬直中不能觸發技能
+
         normalAttack.TryExecute();
         dashSkill.TryExecute();
         ultimateSkill.TryExecute();
@@ -51,12 +60,13 @@ public class PlayerBase : MonoBehaviour, IDamageable {
 
     protected virtual void FixedUpdate() {
         bool skillControllingMovement = dashSkill.IsActive || ultimateSkill.IsActive;
-        if (!skillControllingMovement) {
+        if (!skillControllingMovement && !IsKnockedBack) {
             rb.MovePosition(rb.position + moveInput * stats.moveSpeed * Time.fixedDeltaTime);
         }
 
         dashSkill.Tick();
         ultimateSkill.Tick();
+        knockback.Tick(Time.fixedDeltaTime);
     }
 
     protected virtual void OnCollisionEnter2D(Collision2D collision) {
@@ -71,7 +81,7 @@ public class PlayerBase : MonoBehaviour, IDamageable {
 
     public virtual void TakeDamage(float amount)
     {
-        float multiplier = ultimateSkill.IsActive ? 0f : 1f; // 終結技衝撞過程中完全免疫傷害
+        float multiplier = CanBeKnockedBack ? 1f : 0f; // 跟擊退共用同一個無敵判斷(見 CanBeKnockedBack)
         float actualDamage = amount * multiplier;
         stats.Health -= actualDamage;
 
@@ -81,10 +91,24 @@ public class PlayerBase : MonoBehaviour, IDamageable {
             if (hitEffectPrefab != null) Instantiate(hitEffectPrefab, transform.position, Quaternion.identity);
         }
     }
+
+    // 觸發擊退:成功時打斷正在進行的技能位移(比照撞牆的處理方式),回傳是否成功觸發
+    public virtual bool TryKnockback(Vector2 direction, float distance) {
+        if (!CanBeKnockedBack) return false;
+        if (!knockback.TryApply(direction, distance, knockbackDuration)) return false;
+
+        dashSkill.Interrupt();
+        ultimateSkill.Interrupt();
+        return true;
+    }
 }
 
 public interface IDamageable {
     void TakeDamage(float amount);
+}
+
+public interface IKnockbackable {
+    bool TryKnockback(Vector2 direction, float distance);
 }
 
 public class PlayerStats

@@ -25,15 +25,16 @@ public class UIManager : MonoBehaviour {
     public Text enemyHealthText; // 血量百分比,n% (無條件進位)
 
     PlayerBase player;
-    DogeEnemy enemy;
+    LevelManager levelManager;
 
-    void Awake() {
+    // 用 Start() 而不是 Awake():LevelManager 是在自己的 Awake() 裡動態生成玩家/敵人,
+    // 不同物件的 Awake 執行順序不保證,但 Unity 保證所有物件的 Awake 都跑完後才會進到任何一個 Start()
+    void Start() {
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj != null) player = playerObj.GetComponent<PlayerBase>();
 
-        GameObject enemyObj = GameObject.FindGameObjectWithTag("Enemy");
-        if (enemyObj != null) enemy = enemyObj.GetComponent<DogeEnemy>();
-        if (enemy != null && enemyNameText != null) enemyNameText.text = enemy.enemyName;
+        levelManager = LevelManager.Instance;
+        if (levelManager != null && enemyNameText != null) enemyNameText.text = levelManager.LevelName;
     }
 
     void Update() {
@@ -43,7 +44,7 @@ public class UIManager : MonoBehaviour {
             UpdateUltimate();
         }
 
-        if (enemy != null) UpdateEnemy();
+        if (levelManager != null) UpdateEnemy();
     }
 
     void UpdateHeart() {
@@ -72,7 +73,7 @@ public class UIManager : MonoBehaviour {
     }
 
     void UpdateEnemy() {
-        float ratio = enemy.HealthRatio;
+        float ratio = levelManager.EnemyGroupHealthRatio;
 
         if (enemyFillImage != null) enemyFillImage.fillAmount = ratio;
         if (enemyHealthText != null) enemyHealthText.text = $"{Mathf.CeilToInt(ratio * 100f)}%";

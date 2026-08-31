@@ -164,6 +164,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   health: 600
   baseAttack: 10
+  easyStats:
+    health: 400
+    attack: 6
+  normalStats:
+    health: 600
+    attack: 10
+  hardStats:
+    health: 750
+    attack: 20
   moveSpeed: 7
   phase1CycleInterval: 1.5
   phase2CycleInterval: 0.5

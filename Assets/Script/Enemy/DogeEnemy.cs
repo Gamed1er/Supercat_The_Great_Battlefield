@@ -1,23 +1,13 @@
 using System.Collections;
 using UnityEngine;
 
-// 難度:由 BattleManager 在 Awake 套用到 DogeEnemy 身上,決定基礎數值
-public enum DogeDifficulty { Easy, Normal, Hard }
-
 // 狗仔:新手教學敵人。目前只有跳躍,血量低於一半進入第二階段,新增大狗叫。
-// 狗被限制在地面矩形範圍內遊走/追擊,跳躍時可以暫時跳出範圍。
+// 狗被限制在地面矩形範圍內遊走/追擊(範圍由 LevelManager 透過 SetGroundBounds 設定),跳躍時可以暫時跳出範圍。
 [RequireComponent(typeof(Animator))]
 public class DogeEnemy : EnemyBase {
-    static readonly Vector2 GroundMin = new Vector2(-8f, -3.5f);
-    static readonly Vector2 GroundMax = new Vector2(8f, -2f);
-
     const float phase2HealthPercent = 0.65f; // 血量低於此比例進入二階段,全難度共用
 
-    [Header("顯示")]
-    public string enemyName = "普通狗仔"; // 給 UI 血條用的名稱,暫定
-
     [Header("基礎數值")]
-    public float baseAttack = 5f;
     public float moveSpeed = 6f;
     public float phase1CycleInterval = 1.5f;
     public float phase2CycleInterval = 0.5f;
@@ -41,10 +31,12 @@ public class DogeEnemy : EnemyBase {
     public float bigBarkCooldown = 10f;
     public GameObject sonicWavePrefab;
 
+    [Header("接觸傷害")]
+    public float contactKnockbackDistance = 0.5f; // 咬/跳/一般碰撞的微幅擊退距離,只有水平分量(見 OnCollisionStay2D)
+
     const float mouthAnimDuration = 10f / 60f; // OpenMouth / CloseMouth 動畫長度
     const float bodyContactDamageInterval = 0.5f; // 碰到玩家的傷害,最多每 0.5 秒觸發一次
 
-    Rigidbody2D rb;
     SpriteRenderer spriteRenderer;
     Transform player;
 
@@ -54,36 +46,27 @@ public class DogeEnemy : EnemyBase {
     float bigBarkCooldownTimer;
     bool hasEnteredPhase2;
     float bodyContactDamageTimer;
-    float maxHealth;
     Vector2 wanderTarget;
 
-    bool IsPhase2 => health <= maxHealth * phase2HealthPercent;
+    bool IsPhase2 => health <= MaxHealth * phase2HealthPercent;
     float CurrentCycleInterval => IsPhase2 ? phase2CycleInterval : phase1CycleInterval;
     protected override bool CanBeKnockedBack => !isBigBarking;
 
-    // 給 UI 血條讀取用
-    public float HealthRatio => maxHealth > 0f ? Mathf.Clamp01(health / maxHealth) : 0f;
+    // 血量/攻擊力已由 base.ApplyDifficulty 處理,這裡只疊加狗仔專屬的難度參數(攻擊週期、跳躍時間、大狗叫轉速)
+    public override void ApplyDifficulty(Difficulty difficulty) {
+        base.ApplyDifficulty(difficulty);
 
-    // 依難度覆寫基礎數值,由 BattleManager 在自己的 Awake 中呼叫,
-    // 必須早於下面 Start() 抓 maxHealth/設定初始攻擊週期,才會套用到正確的數值
-    public void ApplyDifficulty(DogeDifficulty difficulty) {
         switch (difficulty) {
-            case DogeDifficulty.Easy:
-                baseAttack = 6f;
-                health = 400f;
+            case Difficulty.Easy:
                 phase1CycleInterval = 2f;
                 phase2CycleInterval = 1f;
                 jumpDuration = 1f;
                 break;
-            case DogeDifficulty.Normal:
-                baseAttack = 10f;
-                health = 600f;
+            case Difficulty.Normal:
                 phase1CycleInterval = 1.5f;
                 phase2CycleInterval = 0.5f;
                 break;
-            case DogeDifficulty.Hard:
-                baseAttack = 20f;
-                health = 750f;
+            case Difficulty.Hard:
                 phase1CycleInterval = 1f;
                 phase2CycleInterval = 0.3f;
                 bigBarkRotationSpeed = 140f;
@@ -100,17 +83,15 @@ public class DogeEnemy : EnemyBase {
         if (playerObj != null) player = playerObj.transform;
     }
 
-    void Start() {
-        // 所有物件的 Awake 都跑完後才會進到這裡,確保 BattleManager 已經套用完難度數值
-        maxHealth = health;
+    protected override void Start() {
+        // 所有物件的 Awake 都跑完後才會進到這裡,確保 LevelManager 已經套用完難度數值與地面範圍
+        base.Start(); // 抓 maxHealth
         PickNewWanderTarget();
         attackCycleTimer = CurrentCycleInterval;
         bigBarkCooldownTimer = bigBarkCooldown;
     }
 
-    protected override void Update() {
-        base.Update(); // 處理 KB 硬直計時
-
+    void Update() {
         if (IsDead || player == null || isPerformingAction || IsKnockedBack) return;
 
         if (IsPhase2) {
@@ -139,6 +120,8 @@ public class DogeEnemy : EnemyBase {
     }
 
     protected override void FixedUpdate() {
+        base.FixedUpdate(); // 處理擊退位移,子類別覆寫 FixedUpdate 一定要呼叫,不然擊退不會生效
+
         if (bodyContactDamageTimer > 0f) bodyContactDamageTimer -= Time.fixedDeltaTime;
 
         if (IsDead || isPerformingAction || IsKnockedBack) return; // 攻擊中的移動由各自的 Routine 自己處理,硬直中站著不動
@@ -152,8 +135,8 @@ public class DogeEnemy : EnemyBase {
 
     void PickNewWanderTarget() {
         wanderTarget = new Vector2(
-            Random.Range(GroundMin.x, GroundMax.x),
-            Random.Range(GroundMin.y, GroundMax.y)
+            Random.Range(groundMin.x, groundMax.x),
+            Random.Range(groundMin.y, groundMax.y)
         );
     }
 
@@ -161,8 +144,8 @@ public class DogeEnemy : EnemyBase {
     void MoveTowards(Vector2 target, float speed) {
         Vector2 current = rb.position;
         Vector2 next = Vector2.MoveTowards(current, target, speed * Time.fixedDeltaTime);
-        next.x = Mathf.Clamp(next.x, GroundMin.x, GroundMax.x);
-        next.y = Mathf.Clamp(next.y, GroundMin.y, GroundMax.y);
+        next.x = Mathf.Clamp(next.x, groundMin.x, groundMax.x);
+        next.y = Mathf.Clamp(next.y, groundMin.y, groundMax.y);
         rb.MovePosition(next);
 
         SetFacing(target.x - current.x);
@@ -231,7 +214,7 @@ public class DogeEnemy : EnemyBase {
         isPerformingAction = true;
         isBigBarking = true; // 大狗叫全程(含移動到定位)不可被打斷
 
-        Vector2 barkPos = new Vector2(0f, GroundMin.y);
+        Vector2 barkPos = new Vector2(0f, groundMin.y);
         while (Vector2.Distance(rb.position, barkPos) > 0.1f) {
             MoveTowards(barkPos, moveSpeed);
             yield return new WaitForFixedUpdate();
@@ -283,15 +266,16 @@ public class DogeEnemy : EnemyBase {
     }
 
     // 大招命中時打斷跳/咬的動作(大狗叫因為 CanBeKnockedBack 擋掉,不會被中斷到)
-    public override bool TryKnockback() {
-        if (!base.TryKnockback()) return false;
+    public override bool TryKnockback(Vector2 direction, float distance) {
+        if (!base.TryKnockback(direction, distance)) return false;
 
         StopAllCoroutines();
         isPerformingAction = false;
         return true;
     }
 
-    // 通用接觸傷害:不管有沒有在放技能,只要碰到玩家就造成傷害,最多每 bodyContactDamageInterval 秒觸發一次;硬直中不會造成傷害
+    // 通用接觸傷害:不管有沒有在放技能(咬、跳、或單純遊走時撞到),只要碰到玩家就造成傷害+微幅擊退,
+    // 最多每 bodyContactDamageInterval 秒觸發一次;硬直中不會造成傷害。方位只取水平分量,避免跳躍落地時把玩家往垂直方向推開。
     void OnCollisionStay2D(Collision2D collision) {
         if (IsDead || IsKnockedBack) return;
         if (bodyContactDamageTimer > 0f) return;
@@ -300,6 +284,11 @@ public class DogeEnemy : EnemyBase {
         if (collision.collider.TryGetComponent(out IDamageable damageable)) {
             damageable.TakeDamage(baseAttack);
             bodyContactDamageTimer = bodyContactDamageInterval;
+
+            if (collision.collider.TryGetComponent(out IKnockbackable knockbackTarget)) {
+                Vector2 direction = new Vector2(collision.transform.position.x - rb.position.x, 0f);
+                if (direction != Vector2.zero) knockbackTarget.TryKnockback(direction, contactKnockbackDistance);
+            }
         }
     }
 }

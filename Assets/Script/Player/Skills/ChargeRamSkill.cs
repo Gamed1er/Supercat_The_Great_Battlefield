@@ -1,11 +1,12 @@
 using UnityEngine;
 
 // 終結技衝撞:右鍵點擊時朝滑鼠鼠標方向衝撞。
-// 過程中完全免疫傷害(由 PlayerBase.TakeDamage 檢查 IsActive 處理);碰到敵人停止位移,造成一段傷害;碰到牆壁只停止。
+// 過程中完全免疫傷害(由 PlayerBase.TakeDamage 檢查 IsActive 處理);碰到敵人停止位移,造成一段傷害+高額擊退;碰到牆壁只停止。
 public class ChargeRamSkill : ISkill {
     const float ramSpeed = 60f;
     const float ramDuration = 0.4f;
     const float chargeCost = 7f;
+    const float knockbackDistance = 4f; // 高額擊退,方位固定用衝刺方向
 
     readonly PlayerBase owner;
     readonly Rigidbody2D rb;
@@ -71,9 +72,9 @@ public class ChargeRamSkill : ISkill {
             AudioManager.Instance.PlaySFX("crit_hit2");
         }
 
-        // 大招命中時嘗試打斷敵人(敵人自己決定當下能不能被打斷,例如正在放不可打斷的大招)
-        if (enemyCollider.TryGetComponent(out EnemyBase enemyBase)) {
-            enemyBase.TryKnockback();
+        // 大招命中時嘗試打斷+擊退敵人(方位是衝刺方向;敵人自己決定當下能不能被打斷,例如正在放不可打斷的大招)
+        if (enemyCollider.TryGetComponent(out IKnockbackable knockbackTarget)) {
+            knockbackTarget.TryKnockback(ramDirection, knockbackDistance);
         }
     }
 }

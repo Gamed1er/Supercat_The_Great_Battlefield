@@ -28,7 +28,7 @@ public class AutoLockShootSkill : ISkill {
         Vector3 targetPos = mainCamera.ScreenToWorldPoint(Input.mousePosition);
         targetPos.z = owner.transform.position.z;
 
-        Bullet.Spawn(bulletPrefab, owner, owner.transform.position, targetPos, owner.stats.baseAttack * damageMultiplier);
+        Bullet.Spawn(bulletPrefab, owner, owner.transform.position, targetPos, owner.stats.baseAttack * damageMultiplier, targetTag: "Enemy");
         AudioManager.Instance.PlaySFX("shoot");
         return true;
     }
