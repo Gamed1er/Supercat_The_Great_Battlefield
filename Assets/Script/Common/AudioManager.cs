@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // 全域音效/BGM 管理器:單例,首次被存取時自動建立並跨場景保留,不需要手動放進場景
-// 音效/BGM 可用檔名透過 Resources 讀取,分別放在 Assets/Audio/Resources/SFX、Assets/Audio/Resources/BGM 底下即可
+// 音效/BGM 可用檔名透過 Resources 讀取,分別放在 Assets/Resources/Audio/SFX、Assets/Resources/Audio/BGM 底下即可
 public class AudioManager : MonoBehaviour {
     static readonly string[] hurtClipNames = { "hurt1", "hurt2" }; // 受傷音效隨機池,玩家/敵人共用
 
@@ -43,8 +43,8 @@ public class AudioManager : MonoBehaviour {
         sfxSource.playOnAwake = false;
     }
 
-    // 播放 BGM,clipName 對應 Assets/Audio/Resources/BGM/{clipName}
-    public void PlayBGM(string clipName, bool loop = true) => PlayBGM(LoadClip(bgmCache, "BGM", clipName), loop);
+    // 播放 BGM,clipName 對應 Assets/Resources/Audio/BGM/{clipName}
+    public void PlayBGM(string clipName, bool loop = true) => PlayBGM(LoadClip(bgmCache, "Audio/BGM", clipName), loop);
 
     // 播放 BGM,同一首正在播放時不會重新播放。loop 預設為 true
     public void PlayBGM(AudioClip clip, bool loop = true) {
@@ -65,8 +65,8 @@ public class AudioManager : MonoBehaviour {
     public void PauseBGM() => bgmSource.Pause();
     public void ResumeBGM() => bgmSource.UnPause();
 
-    // 播放一次性音效,clipName 對應 Assets/Audio/Resources/SFX/{clipName}
-    public void PlaySFX(string clipName, float volumeScale = 1f) => PlaySFX(LoadClip(sfxCache, "SFX", clipName), volumeScale);
+    // 播放一次性音效,clipName 對應 Assets/Resources/Audio/SFX/{clipName}
+    public void PlaySFX(string clipName, float volumeScale = 1f) => PlaySFX(LoadClip(sfxCache, "Audio/SFX", clipName), volumeScale);
 
     // 播放一次性音效,volumeScale 可為個別音效額外調整音量,支援多個音效同時疊加播放
     public void PlaySFX(AudioClip clip, float volumeScale = 1f) {

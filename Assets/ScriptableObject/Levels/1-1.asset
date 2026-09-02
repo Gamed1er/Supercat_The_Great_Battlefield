@@ -12,7 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62c53428937f2b54b858c28509f2714d, type: 3}
   m_Name: 1-1
   m_EditorClassIdentifier: 
+  levelId: 1-1
   levelName: "\u666E\u901A\u72D7\u4ED4"
+  preBattleStoryScript: {fileID: 4900000, guid: 88b9007cfa219604eb36414aebf3bda2, type: 3}
   mapWidthMultiplier: 1
   mapHeightMultiplier: 1
   groundHeightPercent: 0.35

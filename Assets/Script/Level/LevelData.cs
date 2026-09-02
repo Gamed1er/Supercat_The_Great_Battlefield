@@ -12,8 +12,14 @@ public class EnemySpawnEntry {
 // 由 LevelManager 在進場時讀取並動態組出整個關卡,難度則不在這裡設定(由玩家在選關時另外選擇,見 LevelManager)。
 [CreateAssetMenu(fileName = "LevelData", menuName = "Level/LevelData")]
 public class LevelData : ScriptableObject {
+    [Header("識別 (穩定不變的關卡 ID,存檔/已讀劇情旗標用這個當 key,不要用 levelName——那個是給玩家看的顯示文字,改了會跟存檔對不上)")]
+    public string levelId = "1-1";
+
     [Header("顯示 (怪池血條名稱)")]
     public string levelName = "關卡";
+
+    [Header("戰前劇情 (選填;StoryManager 讀這個播,播完/略過後直接進本關卡戰鬥)")]
+    public TextAsset preBattleStoryScript;
 
     [Header("地圖大小 (倍率, 基準為 LevelManager.BaseHalfWidth/BaseHalfHeight)")]
     public float mapWidthMultiplier = 1f;

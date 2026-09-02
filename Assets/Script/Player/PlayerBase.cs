@@ -45,6 +45,8 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
     }
 
     public virtual void Update() {
+        if (Time.timeScale == 0f) return; // 暫停(設定選單開啟中)時不接收任何移動/技能輸入
+
         moveInput = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")).normalized;
         if (moveInput != Vector2.zero) FacingDirection = moveInput;
 
