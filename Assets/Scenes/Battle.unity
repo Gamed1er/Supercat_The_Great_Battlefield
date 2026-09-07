@@ -370,8 +370,10 @@ MonoBehaviour:
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
+  m_FillMethod: 4
   m_FillAmount: 1
   m_FillClockwise: 1
+  m_FillOrigin: 2
   m_FillOrigin: 2
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
@@ -2188,6 +2190,7 @@ MonoBehaviour:
   m_FillAmount: 0.529
   m_FillClockwise: 1
   m_FillOrigin: 2
+  m_FillOrigin: 2
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
 --- !u!222 &746590552
@@ -3438,7 +3441,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1213019549}
   m_Layer: 0
-  m_Name: Ultimate
+  m_Name: Skill 2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4114,7 +4117,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1549762648}
   m_Layer: 0
-  m_Name: Skill
+  m_Name: Skill 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
