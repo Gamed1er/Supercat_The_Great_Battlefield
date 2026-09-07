@@ -162,22 +162,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e1e128474e314f91a96f5ef15ce195cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  health: 600
-  baseAttack: 10
-  easyStats:
-    health: 400
-    attack: 6
-  normalStats:
-    health: 600
-    attack: 10
-  hardStats:
-    health: 750
-    attack: 20
+  health: 300
+  baseAttack: 5
+  healthMultiplier: 1.2
+  attackMultiplier: 1.2
+  knockbackDuration: 0.5
+  hitEffectPrefab: {fileID: 4000001, guid: 5a818eb93b5045e0a6af51105775f2eb, type: 3}
   moveSpeed: 7
-  phase1CycleInterval: 1.5
-  phase2CycleInterval: 0.5
   chaseSpeedMultiplier: 1.5
-  jumpDuration: 0.8
+  phase1CooldownDifficulty0: 4
+  phase1CooldownDifficulty5: 0.5
+  phase2CooldownDifficulty0: 2.5
+  phase2CooldownDifficulty5: 0.3
+  jumpDuration: 1
   jumpHeight: 3
   biteThresholdY: -2.5
   biteChaseDuration: 1.5
@@ -189,7 +186,7 @@ MonoBehaviour:
   bigBarkBeamGap: 1
   bigBarkCooldown: 10
   sonicWavePrefab: {fileID: 5000001, guid: 7c6c26c21bea45b8ad40f41179e96fc9, type: 3}
-  hitEffectPrefab: {fileID: 4000001, guid: 5a818eb93b5045e0a6af51105775f2eb, type: 3}
+  contactKnockbackDistance: 0.5
 --- !u!95 &7859453294047258998
 Animator:
   serializedVersion: 5

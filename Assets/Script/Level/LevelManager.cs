@@ -8,8 +8,8 @@ public class LevelManager : MonoBehaviour {
 
     [SerializeField] LevelData levelData;
 
-    [Header("難度 (暫時手動指定,之後由選關/選難度畫面傳入)")]
-    [SerializeField] Difficulty difficulty = Difficulty.Normal;
+    [Header("難度 (暫時手動指定,之後由選關/選難度畫面傳入;連續值 0~5,越大越難)")]
+    [SerializeField, Range(0, EnemyBase.MaxDifficulty)] int difficulty = 2;
 
     [SerializeField] GameObject playerPrefab;
 

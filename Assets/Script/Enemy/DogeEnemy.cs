@@ -9,13 +9,18 @@ public class DogeEnemy : EnemyBase {
 
     [Header("基礎數值")]
     public float moveSpeed = 6f;
-    public float phase1CycleInterval = 1.5f;
-    public float phase2CycleInterval = 0.5f;
     public float chaseSpeedMultiplier = 1.5f;
+
+    [Header("出招冷卻 (難度 0 / 難度 5 的秒數,中間難度用等差數列內插,見 ApplyDifficulty)")]
+    public float phase1CooldownDifficulty0 = 2f;
+    public float phase1CooldownDifficulty5 = 1f;
+    public float phase2CooldownDifficulty0 = 1f;
+    public float phase2CooldownDifficulty5 = 0.3f;
 
     [Header("跳躍")]
     public float jumpDuration = 0.8f;
     public float jumpHeight = 2f;
+    const float maxJumpPeakYBelowMaxDifficulty = 3.5f; // 難度 5 以下,跳躍最高點的世界座標 y 上限(寫死,難度 5 不受限)
 
     [Header("咬 (玩家躲在地面以下、跳躍打不到時使用)")]
     public float biteThresholdY = -2.5f; // 玩家 y 低於這個值時,攻擊改用咬而非跳躍
@@ -32,7 +37,7 @@ public class DogeEnemy : EnemyBase {
     public GameObject sonicWavePrefab;
 
     [Header("接觸傷害")]
-    public float contactKnockbackDistance = 0.5f; // 咬/跳/一般碰撞的微幅擊退距離,只有水平分量(見 OnCollisionStay2D)
+    public float contactKnockbackDistance = 0.5f; // 咬/跳/一般碰撞的微幅擊退距離,只有水平分量(見 OnTriggerStay2D)
 
     const float mouthAnimDuration = 10f / 60f; // OpenMouth / CloseMouth 動畫長度
     const float bodyContactDamageInterval = 0.5f; // 碰到玩家的傷害,最多每 0.5 秒觸發一次
@@ -48,30 +53,23 @@ public class DogeEnemy : EnemyBase {
     float bodyContactDamageTimer;
     Vector2 wanderTarget;
 
+    int difficulty; // ApplyDifficulty 套用時記下,跳躍限高判斷會用到
+    float phase1CycleInterval; // 由 ApplyDifficulty 依難度算出,不直接在 Inspector 調整
+    float phase2CycleInterval;
+
     bool IsPhase2 => health <= MaxHealth * phase2HealthPercent;
     float CurrentCycleInterval => IsPhase2 ? phase2CycleInterval : phase1CycleInterval;
     protected override bool CanBeKnockedBack => !isBigBarking;
 
-    // 血量/攻擊力已由 base.ApplyDifficulty 處理,這裡只疊加狗仔專屬的難度參數(攻擊週期、跳躍時間、大狗叫轉速)
-    public override void ApplyDifficulty(Difficulty difficulty) {
+    // 血量/攻擊力已由 base.ApplyDifficulty 處理,這裡只疊加狗仔專屬的難度參數:
+    // 出招冷卻用難度 0/難度 5 的秒數線性內插(等差數列)算出中間難度的值。
+    public override void ApplyDifficulty(int difficulty) {
         base.ApplyDifficulty(difficulty);
 
-        switch (difficulty) {
-            case Difficulty.Easy:
-                phase1CycleInterval = 2f;
-                phase2CycleInterval = 1f;
-                jumpDuration = 1f;
-                break;
-            case Difficulty.Normal:
-                phase1CycleInterval = 1.5f;
-                phase2CycleInterval = 0.5f;
-                break;
-            case Difficulty.Hard:
-                phase1CycleInterval = 1f;
-                phase2CycleInterval = 0.3f;
-                bigBarkRotationSpeed = 140f;
-                break;
-        }
+        this.difficulty = Mathf.Clamp(difficulty, 0, MaxDifficulty);
+        float t = this.difficulty / (float)MaxDifficulty;
+        phase1CycleInterval = Mathf.Lerp(phase1CooldownDifficulty0, phase1CooldownDifficulty5, t);
+        phase2CycleInterval = Mathf.Lerp(phase2CooldownDifficulty0, phase2CooldownDifficulty5, t);
     }
 
     protected override void Awake() {
@@ -161,7 +159,9 @@ public class DogeEnemy : EnemyBase {
 
         Vector2 start = rb.position;
         float targetX = player.position.x; // 只鎖定水平方向;跳躍最高點會鎖定比玩家高一點的位置,但落地一定回到起跳的地面高度,不會卡在半空中
-        float peakHeight = Mathf.Max(jumpHeight, player.position.y + 1f - start.y);
+        float peakY = Mathf.Max(start.y + jumpHeight, player.position.y + 1f);
+        if (difficulty < MaxDifficulty) peakY = Mathf.Min(peakY, maxJumpPeakYBelowMaxDifficulty); // 難度 5 以下限制跳躍最高點,難度 5 維持現狀
+        float peakHeight = peakY - start.y;
 
         SetFacing(targetX - start.x);
         animator.SetTrigger("OpenMouth");
@@ -276,17 +276,18 @@ public class DogeEnemy : EnemyBase {
 
     // 通用接觸傷害:不管有沒有在放技能(咬、跳、或單純遊走時撞到),只要碰到玩家就造成傷害+微幅擊退,
     // 最多每 bodyContactDamageInterval 秒觸發一次;硬直中不會造成傷害。方位只取水平分量,避免跳躍落地時把玩家往垂直方向推開。
-    void OnCollisionStay2D(Collision2D collision) {
+    // 敵人與玩家之間不再有物理碰撞(EnemyBase.Awake 已把碰撞體設為 Trigger),改用 OnTriggerStay2D 偵測接觸。
+    void OnTriggerStay2D(Collider2D other) {
         if (IsDead || IsKnockedBack) return;
         if (bodyContactDamageTimer > 0f) return;
-        if (!collision.collider.CompareTag("Player")) return;
+        if (!other.CompareTag("Player")) return;
 
-        if (collision.collider.TryGetComponent(out IDamageable damageable)) {
+        if (other.TryGetComponent(out IDamageable damageable)) {
             damageable.TakeDamage(baseAttack);
             bodyContactDamageTimer = bodyContactDamageInterval;
 
-            if (collision.collider.TryGetComponent(out IKnockbackable knockbackTarget)) {
-                Vector2 direction = new Vector2(collision.transform.position.x - rb.position.x, 0f);
+            if (other.TryGetComponent(out IKnockbackable knockbackTarget)) {
+                Vector2 direction = new Vector2(other.transform.position.x - rb.position.x, 0f);
                 if (direction != Vector2.zero) knockbackTarget.TryKnockback(direction, contactKnockbackDistance);
             }
         }

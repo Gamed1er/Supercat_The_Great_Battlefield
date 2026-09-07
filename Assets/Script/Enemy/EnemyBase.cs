@@ -1,15 +1,5 @@
 using UnityEngine;
 
-// 難度:由 LevelManager 在生成敵人後立刻套用(必須早於 Start,詳見 ApplyDifficulty)
-public enum Difficulty { Easy, Normal, Hard }
-
-// 各難度的血量/攻擊力,由各敵人 prefab 自己在 Inspector 填三組寫死的數字(不是倍率,方便做出非線性的難度曲線)
-[System.Serializable]
-public struct DifficultyStats {
-    public float health;
-    public float attack;
-}
-
 // 沒有任何技能的敵人,純粹用來測試普攻邏輯。有實際行為的敵人繼承這個類別。
 // 打斷(KB)/擊退邏輯放在這裡共用:子類別的攻擊/行為邏輯應該在 Update/FixedUpdate 一開始就擋掉 IsKnockedBack,
 // 且子類別覆寫 FixedUpdate 時要記得呼叫 base.FixedUpdate(),否則擊退位移不會生效。
@@ -17,15 +7,18 @@ public struct DifficultyStats {
 [RequireComponent(typeof(CircleCollider2D))]
 [RequireComponent(typeof(SpriteRenderer))]
 public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
-    public float health = 50f;
-    public float baseAttack = 5f;
+    // 難度連續值範圍 0~5(由 LevelManager 在生成敵人後立刻套用,必須早於 Start,詳見 ApplyDifficulty),
+    // 數字越大越難;LevelManager 的難度欄位共用這個上限。
+    public const int MaxDifficulty = 5;
+
+    [Header("難度數值 (health/baseAttack 是難度 0 的數值,每 +1 級乘一次對應倍率;難度 5 額外多乘一次拉開落差)")]
+    public float health = 50f; // 難度 0 的血量,ApplyDifficulty 後會被覆寫成套用難度後的目前血量
+    public float baseAttack = 5f; // 難度 0 的攻擊力,ApplyDifficulty 後會被覆寫成套用難度後的目前攻擊力
+    public float healthMultiplier = 1.2f;
+    public float attackMultiplier = 1.2f;
+
     public float knockbackDuration = 0.5f; // 被打斷後的硬直時間,子類別可覆寫預設值
     public GameObject hitEffectPrefab; // 受到傷害時的特效
- 
-    [Header("難度數值 (血量、攻擊力)")]
-    [SerializeField] DifficultyStats easyStats = new DifficultyStats { health = 50f, attack = 5f };
-    [SerializeField] DifficultyStats normalStats = new DifficultyStats { health = 50f, attack = 5f };
-    [SerializeField] DifficultyStats hardStats = new DifficultyStats { health = 50f, attack = 5f };
 
     protected Animator animator; // 沒有 Animator 元件的敵人(例如這個測試用的 EnemyBase)會是 null,SetTrigger 前記得判斷
     protected Rigidbody2D rb;
@@ -48,6 +41,9 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
         rb.gravityScale = 0f;
         rb.bodyType = RigidbodyType2D.Kinematic;
 
+        // 敵人不再對玩家產生物理碰撞(不會互相推擠/卡住),接觸傷害改走 OnTrigger 系列偵測(見子類別的接觸傷害邏輯)
+        GetComponent<CircleCollider2D>().isTrigger = true;
+
         animator = GetComponent<Animator>();
         knockback = new KnockbackState(rb);
     }
@@ -61,17 +57,17 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
         knockback.Tick(Time.fixedDeltaTime);
     }
 
-    // 依難度覆寫血量/攻擊力,由 LevelManager 在生成敵人後立刻呼叫(必須早於 Start)。
+    // 依難度算出目前血量/攻擊力,由 LevelManager 在生成敵人後立刻呼叫(必須早於 Start)。
+    // health/baseAttack 在呼叫當下的值視為難度 0 的基準,乘上 multiplier^難度 次方算出目前值;
+    // 難度 5(MaxDifficulty)再額外多乘一次,讓最高難度多一段落差。只能對同一個敵人呼叫一次,
+    // 重複呼叫會拿上一次算出的結果當底數疊乘。
     // 子類別可覆寫並在呼叫 base.ApplyDifficulty 後,再疊加自己專屬的難度參數(例如攻擊週期、位移速度)。
-    public virtual void ApplyDifficulty(Difficulty difficulty) {
-        DifficultyStats stats = difficulty switch {
-            Difficulty.Easy => easyStats,
-            Difficulty.Hard => hardStats,
-            _ => normalStats,
-        };
+    public virtual void ApplyDifficulty(int difficulty) {
+        difficulty = Mathf.Clamp(difficulty, 0, MaxDifficulty);
+        int exponent = difficulty == MaxDifficulty ? difficulty + 1 : difficulty;
 
-        health = stats.health;
-        baseAttack = stats.attack;
+        health *= Mathf.Pow(healthMultiplier, exponent);
+        baseAttack *= Mathf.Pow(attackMultiplier, exponent);
     }
 
     // 地面系敵人的遊走/追擊範圍,由 LevelManager 依 LevelData 算好後,在生成敵人後立刻呼叫(必須早於 Start)。

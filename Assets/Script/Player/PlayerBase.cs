@@ -75,9 +75,15 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
         if (collision.collider.CompareTag("Wall")) {
             dashSkill.Interrupt();
             ultimateSkill.Interrupt();
-        } else if (collision.collider.CompareTag("Enemy")) {
-            dashSkill.OnHitEnemy(collision.collider);
-            ultimateSkill.OnHitEnemy(collision.collider);
+        }
+    }
+
+    // 玩家與敵人之間不再有物理碰撞(EnemyBase.Awake 已把敵人的碰撞體設為 Trigger),
+    // 衝刺/終結技撞到敵人改用 OnTriggerEnter2D 偵測,牆壁仍是實體碰撞維持 OnCollisionEnter2D。
+    protected virtual void OnTriggerEnter2D(Collider2D other) {
+        if (other.CompareTag("Enemy")) {
+            dashSkill.OnHitEnemy(other);
+            ultimateSkill.OnHitEnemy(other);
         }
     }
 

@@ -1,21 +1,16 @@
 using UnityEngine;
 
-// 戰技位移:左鍵點擊時朝滑鼠鼠標方向位移
+// 戰技瞬移:左鍵點擊時瞬間移動到滑鼠鼠標的世界座標,無距離限制,沒有移動過程(不同於「位移」,一幀內直接完成)。
 public class DashSkill : ISkill {
-    const float dashSpeed = 50f;
-    const float dashDuration = 0.1f;
-
     readonly Rigidbody2D rb;
     readonly float cooldown;
     readonly Camera mainCamera;
 
     public float Cooldown => cooldown;
     public float CooldownRemaining => Mathf.Max(0f, Cooldown - (Time.time - lastTriggerTime));
-    public bool IsActive { get; private set; }
+    public bool IsActive => false; // 瞬間完成,沒有移動過程需要暫停 WASD 移動或被中斷
 
     float lastTriggerTime = -Mathf.Infinity;
-    float dashElapsed;
-    Vector2 dashDirection;
     bool wasReady = true; // 冷卻剛好轉為就緒時播放提示音,一開始就是就緒狀態不用播
 
     public DashSkill(PlayerBase owner, float cooldown) {
@@ -32,14 +27,10 @@ public class DashSkill : ISkill {
         }
 
         Vector2 mouseWorldPos = mainCamera.ScreenToWorldPoint(Input.mousePosition);
-        Vector2 direction = mouseWorldPos - rb.position;
-        if (direction == Vector2.zero) return false;
-        direction.Normalize();
+        if (mouseWorldPos == rb.position) return false;
 
         lastTriggerTime = Time.time;
-        IsActive = true;
-        dashElapsed = 0f;
-        dashDirection = direction;
+        rb.position = mouseWorldPos;
         AudioManager.Instance.PlaySFX("teleport");
         return true;
     }
@@ -48,22 +39,9 @@ public class DashSkill : ISkill {
         bool isReady = CooldownRemaining <= 0f;
         if (isReady && !wasReady) AudioManager.Instance.PlaySFX("skill_done");
         wasReady = isReady;
-
-        if (!IsActive) return;
-
-        dashElapsed += Time.fixedDeltaTime;
-        rb.MovePosition(rb.position + dashDirection * dashSpeed * Time.fixedDeltaTime);
-
-        if (dashElapsed >= dashDuration) {
-            IsActive = false;
-        }
     }
 
-    public void Interrupt() {
-        IsActive = false;
-    }
+    public void Interrupt() { }
 
-    public void OnHitEnemy(Collider2D enemyCollider) {
-        IsActive = false;
-    }
+    public void OnHitEnemy(Collider2D enemyCollider) { }
 }
