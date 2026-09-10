@@ -2,7 +2,7 @@ using UnityEngine;
 
 public interface ISkill {
     float Cooldown { get; }
-    float CooldownRemaining { get; } // 距離下次可施放還剩幾秒,給 UI 顯示用
+    float CooldownCurrent { get; } // 距離下次可施放還剩多少進度, UI 顯示用
     bool TryExecute();
 
     bool IsActive { get; } // 目前是否有進行中的位移,PlayerBase 用來決定要不要略過 WASD 移動

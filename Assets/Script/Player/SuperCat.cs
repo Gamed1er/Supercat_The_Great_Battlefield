@@ -10,7 +10,7 @@ public class SuperCat : PlayerBase {
         stats = new PlayerStats(attack: 11f, health: 110f, moveSpeed: 8f);
 
         normalAttack = new AutoLockShootSkill(this, bulletPrefab, damageMultiplier: 1.0f);
-        dashSkill = new DashSkill(this, cooldown: 2f);
+        dashSkill = new DashSkill(this, cooldown: 5f);
         ultimateSkill = new ChargeRamSkill(this, damageMultiplier: 2.0f);
     }
 }

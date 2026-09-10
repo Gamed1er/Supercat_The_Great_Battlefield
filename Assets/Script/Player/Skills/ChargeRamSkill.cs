@@ -16,8 +16,8 @@ public class ChargeRamSkill : ISkill {
     readonly Camera mainCamera;
     readonly float damageMultiplier;
 
-    public float Cooldown => 0f; // 用充能消耗來限制施放頻率,沒有額外冷卻
-    public float CooldownRemaining => 0f;
+    public float CooldownCurrent => 0f; // 用充能消耗來限制施放頻率,沒有額外冷卻
+    public float Cooldown => 0f;
     public bool IsActive { get; private set; }
 
     float ramElapsed;
