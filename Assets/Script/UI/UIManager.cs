@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,13 +12,13 @@ public class UIManager : MonoBehaviour {
     public Image heartFillImage; // Fill Amount = 血量比例,顏色依比例變化
     public Text heartText; // 原始血量數字
 
-    [Header("Skill (戰技)")]
-    public Image skillFillImage; // SkillCenter,Fill Amount = 冷卻完成度(1 就緒 / 0 剛用)
-    public Text skillText; // 剩餘冷卻秒數
+    [Header("S1 (技能槽1)")]
+    public Image S1_FillImage; // SkillCenter,Fill Amount = 冷卻完成度(1 就緒 / 0 剛用)
+    public Text S1_Text; // 剩餘冷卻秒數
 
-    [Header("Ultimate (終結技)")]
-    public Image ultimateFillImage; // SkillCenter,Fill Amount = 充能比例
-    public Text ultimateText; // 充能 n / m
+    [Header("S2 (技能槽2)")]
+    public Image S2_FillImage; // SkillCenter,Fill Amount = 充能比例
+    public Text S2_Text; // 充能 n / m
 
     [Header("Enemy")]
     public Image enemyFillImage; // Fill Amount = 血量比例,1 滿血 / 0 死亡
@@ -40,8 +41,8 @@ public class UIManager : MonoBehaviour {
     void Update() {
         if (player != null) {
             UpdateHeart();
-            UpdateSkill();
-            UpdateUltimate();
+            UpdateS1();
+            UpdateS2();
         }
 
         if (levelManager != null) UpdateEnemy();
@@ -58,18 +59,19 @@ public class UIManager : MonoBehaviour {
         if (heartText != null) heartText.text = Mathf.CeilToInt(player.Health).ToString();
     }
 
-    void UpdateSkill() {
-        float ratio = player.DashCooldown > 0f ? 1f - Mathf.Clamp01(player.DashCooldownRemaining / player.DashCooldown) : 1f;
+    void UpdateS1(string chargeType = "time") {
+        
+        float ratio = player.S1_CooldownCurrent > 0f ? Mathf.Clamp01(player.S1_CooldownCurrent / player.S1_Cooldown) : 0f;
 
-        if (skillFillImage != null) skillFillImage.fillAmount = ratio;
-        if (skillText != null) skillText.text = $"{player.DashCooldownRemaining:F1}秒";
+        if (S1_FillImage != null) S1_FillImage.fillAmount = ratio;
+        if (S1_Text != null) S1_Text.text = $"{player.S1_Cooldown * (1f - ratio):F1}s";
     }
 
-    void UpdateUltimate() {
-        float ratio = player.UltimateMaxCharge > 0f ? Mathf.Clamp01(player.UltimateCharge / player.UltimateMaxCharge) : 0f;
+    void UpdateS2(string chargeType = "time") {
+        float ratio = player.S2_CooldownCurrent > 0f ? Mathf.Clamp01(player.S2_CooldownCurrent / player.S2_Cooldown) : 0f;
 
-        if (ultimateFillImage != null) ultimateFillImage.fillAmount = ratio;
-        if (ultimateText != null) ultimateText.text = $"{Mathf.FloorToInt(player.UltimateCharge)} / {Mathf.FloorToInt(player.UltimateMaxCharge)}";
+        if (S2_FillImage != null) S2_FillImage.fillAmount = ratio;
+        if (S2_Text != null) S2_Text.text = $"{Mathf.FloorToInt(player.S2_CooldownCurrent)} / {Mathf.FloorToInt(player.S2_Cooldown)}";
     }
 
     void UpdateEnemy() {

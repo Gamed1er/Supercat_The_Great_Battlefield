@@ -162,8 +162,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f7778f2b5ef15a3468170040a19375c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bulletPrefab: {fileID: 3000001, guid: 3af9f2d88563432d8815f9a2f7012166, type: 3}
   hitEffectPrefab: {fileID: 4000001, guid: 5a818eb93b5045e0a6af51105775f2eb, type: 3}
+  knockbackDuration: 0.3
+  bulletPrefab: {fileID: 3000001, guid: 3af9f2d88563432d8815f9a2f7012166, type: 3}
 --- !u!95 &7260668935681982563
 Animator:
   serializedVersion: 5

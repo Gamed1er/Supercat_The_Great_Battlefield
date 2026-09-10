@@ -29,10 +29,10 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
     // 給 UI 讀取狀態用
     public float Health => stats.Health;
     public float MaxHealth => stats.baseHealth;
-    public float DashCooldown => dashSkill.Cooldown;
-    public float DashCooldownRemaining => dashSkill.CooldownRemaining;
-    public float UltimateCharge => stats.Charge;
-    public float UltimateMaxCharge => PlayerStats.MaxCharge;
+    public float S1_CooldownCurrent => dashSkill.CooldownCurrent;
+    public float S1_Cooldown => dashSkill.Cooldown;
+    public float S2_CooldownCurrent => stats.Charge;
+    public float S2_Cooldown => PlayerStats.MaxCharge;
 
     protected virtual void Awake() {
         rb = GetComponent<Rigidbody2D>();

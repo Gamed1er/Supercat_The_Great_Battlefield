@@ -7,11 +7,12 @@ public class DashSkill : ISkill {
     readonly Camera mainCamera;
 
     public float Cooldown => cooldown;
-    public float CooldownRemaining => Mathf.Max(0f, Cooldown - (Time.time - lastTriggerTime));
+
+    public float CooldownCurrent => Mathf.Max(0f, Time.time - lastTriggerTime);
     public bool IsActive => false; // 瞬間完成,沒有移動過程需要暫停 WASD 移動或被中斷
 
-    float lastTriggerTime = -Mathf.Infinity;
-    bool wasReady = true; // 冷卻剛好轉為就緒時播放提示音,一開始就是就緒狀態不用播
+    float lastTriggerTime = 0f;
+    bool wasReady = false; // 冷卻剛好轉為就緒時播放提示音
 
     public DashSkill(PlayerBase owner, float cooldown) {
         this.cooldown = cooldown;
@@ -36,7 +37,7 @@ public class DashSkill : ISkill {
     }
 
     public void Tick() {
-        bool isReady = CooldownRemaining <= 0f;
+        bool isReady = CooldownCurrent >= Cooldown;
         if (isReady && !wasReady) AudioManager.Instance.PlaySFX("skill_done");
         wasReady = isReady;
     }

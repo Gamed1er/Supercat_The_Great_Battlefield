@@ -320,7 +320,7 @@ GameObject:
   - component: {fileID: 96802969}
   - component: {fileID: 96802968}
   m_Layer: 0
-  m_Name: SkillCenter
+  m_Name: IconMask
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -365,15 +365,13 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 47f67bf7f0c688146ac8bb065ab31900, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 7bfd2dd2d711eb244b22e14398eaa5be, type: 3}
   m_Type: 3
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
-  m_FillMethod: 4
   m_FillAmount: 1
   m_FillClockwise: 1
-  m_FillOrigin: 2
   m_FillOrigin: 2
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
@@ -1073,7 +1071,7 @@ GameObject:
   - component: {fileID: 440801888}
   - component: {fileID: 440801887}
   m_Layer: 0
-  m_Name: SkillBase
+  m_Name: Disk
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1118,7 +1116,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: e595eaebe2696384397aac8144fddd84, type: 3}
+  m_Sprite: {fileID: 21300000, guid: edee3d52e066d7642861e206b7053985, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1679,7 +1677,7 @@ GameObject:
   - component: {fileID: 612711530}
   - component: {fileID: 612711529}
   m_Layer: 0
-  m_Name: SkillCenterBack
+  m_Name: Icon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1724,7 +1722,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 47f67bf7f0c688146ac8bb065ab31900, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 7bfd2dd2d711eb244b22e14398eaa5be, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2137,7 +2135,7 @@ GameObject:
   - component: {fileID: 746590552}
   - component: {fileID: 746590551}
   m_Layer: 0
-  m_Name: SkillCenter
+  m_Name: IconMask
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2182,14 +2180,13 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: e20c10e08011faa43895e0f4ef7fb2bf, type: 3}
+  m_Sprite: {fileID: 21300000, guid: fd75c81db64e57c4e83d62c76f38a1fc, type: 3}
   m_Type: 3
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
-  m_FillAmount: 0.529
+  m_FillAmount: 0.767
   m_FillClockwise: 1
-  m_FillOrigin: 2
   m_FillOrigin: 2
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
@@ -3561,7 +3558,7 @@ GameObject:
   - component: {fileID: 1214277502}
   - component: {fileID: 1214277501}
   m_Layer: 0
-  m_Name: SkillCenterBack
+  m_Name: Icon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3599,14 +3596,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.26415092, g: 0.26415092, b: 0.26415092, a: 1}
+  m_Color: {r: 0.21960786, g: 0.21960786, b: 0.21960786, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: e20c10e08011faa43895e0f4ef7fb2bf, type: 3}
+  m_Sprite: {fileID: 21300000, guid: fd75c81db64e57c4e83d62c76f38a1fc, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -3636,7 +3633,7 @@ GameObject:
   - component: {fileID: 1314256283}
   - component: {fileID: 1314256282}
   m_Layer: 0
-  m_Name: SkillBase
+  m_Name: Disk
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3681,7 +3678,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: e595eaebe2696384397aac8144fddd84, type: 3}
+  m_Sprite: {fileID: 21300000, guid: edee3d52e066d7642861e206b7053985, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -4495,10 +4492,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   heartFillImage: {fileID: 494963099}
   heartText: {fileID: 1028085619}
-  skillFillImage: {fileID: 96802968}
-  skillText: {fileID: 1651722812}
-  ultimateFillImage: {fileID: 746590551}
-  ultimateText: {fileID: 1213795983}
+  S1_FillImage: {fileID: 96802968}
+  S1_Text: {fileID: 1651722812}
+  S2_FillImage: {fileID: 746590551}
+  S2_Text: {fileID: 1213795983}
   enemyFillImage: {fileID: 733581698}
   enemyNameText: {fileID: 1715927670}
   enemyHealthText: {fileID: 1026823287}
@@ -4515,7 +4512,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   levelData: {fileID: 11400000, guid: c84302928d6e47c46883d81820968aeb, type: 2}
-  difficulty: 5
+  difficulty: 0
   playerPrefab: {fileID: 1000001, guid: 7d6dd06119c142ba9d087df03b9e431d, type: 3}
 --- !u!1 &2043541255
 GameObject:
