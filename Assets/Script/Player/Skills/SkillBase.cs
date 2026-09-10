@@ -9,4 +9,5 @@ public interface ISkill {
     void Tick(); // 進行中時每個 FixedUpdate 呼叫一次,技能自己處理位移
     void Interrupt(); // 被牆壁打斷時呼叫
     void OnHitEnemy(Collider2D enemyCollider); // 角色本體撞到敵人時呼叫(例如衝撞命中)
+    void ReduceCooldown(float seconds); // 外部縮短冷卻(例如被動效果),沒有實體冷卻可縮的技能(如充能制)給空實作
 }

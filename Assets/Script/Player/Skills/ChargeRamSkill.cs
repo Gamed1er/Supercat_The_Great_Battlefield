@@ -16,8 +16,10 @@ public class ChargeRamSkill : ISkill {
     readonly Camera mainCamera;
     readonly float damageMultiplier;
 
-    public float CooldownCurrent => 0f; // 用充能消耗來限制施放頻率,沒有額外冷卻
-    public float Cooldown => 0f;
+    // 用充能消耗來限制施放頻率,沒有額外冷卻;回報充能進度給 PlayerBase/UI 當作「冷卻進度」讀,
+    // 這樣 UIManager 不用管角色的大招到底是冷卻制還是充能制,一律讀 ultimateSkill.CooldownCurrent/Cooldown 就好(見 PlayerBase.S2_*)
+    public float CooldownCurrent => owner.stats.Charge;
+    public float Cooldown => PlayerStats.MaxCharge;
     public bool IsActive { get; private set; }
 
     float ramElapsed;
@@ -111,4 +113,6 @@ public class ChargeRamSkill : ISkill {
             knockbackTarget.TryKnockback(ramDirection, knockbackDistance);
         }
     }
+
+    public void ReduceCooldown(float seconds) { } // 充能制,沒有時間冷卻可縮
 }

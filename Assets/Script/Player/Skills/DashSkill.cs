@@ -45,4 +45,5 @@ public class DashSkill : ISkill {
     public void Interrupt() { }
 
     public void OnHitEnemy(Collider2D enemyCollider) { }
+    public void ReduceCooldown(float seconds) { lastTriggerTime -= seconds; }
 }

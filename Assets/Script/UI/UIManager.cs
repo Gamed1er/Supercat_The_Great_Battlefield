@@ -13,11 +13,13 @@ public class UIManager : MonoBehaviour {
     public Text heartText; // 原始血量數字
 
     [Header("S1 (技能槽1)")]
-    public Image S1_FillImage; // SkillCenter,Fill Amount = 冷卻完成度(1 就緒 / 0 剛用)
+    public Image S1_IconImage; // Icon,底層固定亮度的圖示,顯示角色的技能圖示
+    public Image S1_FillImage; // IconMask,Fill Amount = 冷卻完成度(1 就緒 / 0 剛用),同一張圖示疊在 S1_IconImage 上方
     public Text S1_Text; // 剩餘冷卻秒數
 
     [Header("S2 (技能槽2)")]
-    public Image S2_FillImage; // SkillCenter,Fill Amount = 充能比例
+    public Image S2_IconImage; // Icon,底層固定亮度的圖示,顯示角色的終結技圖示
+    public Image S2_FillImage; // IconMask,Fill Amount = 充能比例,同一張圖示疊在 S2_IconImage 上方
     public Text S2_Text; // 充能 n / m
 
     [Header("Enemy")]
@@ -34,6 +36,8 @@ public class UIManager : MonoBehaviour {
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj != null) player = playerObj.GetComponent<PlayerBase>();
 
+        if (player != null) SetupSkillIcons();
+
         levelManager = LevelManager.Instance;
         if (levelManager != null && enemyNameText != null) enemyNameText.text = levelManager.LevelName;
     }
@@ -46,6 +50,19 @@ public class UIManager : MonoBehaviour {
         }
 
         if (levelManager != null) UpdateEnemy();
+    }
+
+    // 只在 Start() 呼叫一次:圖示跟著目前操控的角色走,戰鬥中不會變,不用每 frame 設
+    // 角色沒指定圖示(Sprite 留空)時保留 Inspector 原本手動放的圖,不強制覆蓋成空白
+    void SetupSkillIcons() {
+        if (player.S1_Icon != null) {
+            if (S1_IconImage != null) S1_IconImage.sprite = player.S1_Icon;
+            if (S1_FillImage != null) S1_FillImage.sprite = player.S1_Icon;
+        }
+        if (player.S2_Icon != null) {
+            if (S2_IconImage != null) S2_IconImage.sprite = player.S2_Icon;
+            if (S2_FillImage != null) S2_FillImage.sprite = player.S2_Icon;
+        }
     }
 
     void UpdateHeart() {
@@ -71,7 +88,11 @@ public class UIManager : MonoBehaviour {
         float ratio = player.S2_CooldownCurrent > 0f ? Mathf.Clamp01(player.S2_CooldownCurrent / player.S2_Cooldown) : 0f;
 
         if (S2_FillImage != null) S2_FillImage.fillAmount = ratio;
-        if (S2_Text != null) S2_Text.text = $"{Mathf.FloorToInt(player.S2_CooldownCurrent)} / {Mathf.FloorToInt(player.S2_Cooldown)}";
+        if (S2_Text != null) {
+            S2_Text.text = player.S2_ShowSecondsFormat
+                ? $"{player.S2_Cooldown * (1f - ratio):F1}s"
+                : $"{Mathf.FloorToInt(player.S2_CooldownCurrent)} / {Mathf.FloorToInt(player.S2_Cooldown)}";
+        }
     }
 
     void UpdateEnemy() {

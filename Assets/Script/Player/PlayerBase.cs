@@ -14,6 +14,10 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
     public GameObject hitEffectPrefab; // 受到傷害時的特效,免傷時不會播放
     public float knockbackDuration = 0.3f; // 被擊退時的硬直時間
 
+    [Header("技能 UI 圖示")]
+    [SerializeField] Sprite s1Icon; // 技能槽1(dashSkill)的圖示,各角色 prefab 各自指定
+    [SerializeField] Sprite s2Icon; // 技能槽2(ultimateSkill)的圖示,各角色 prefab 各自指定
+
     protected Rigidbody2D rb;
     SpriteRenderer spriteRenderer;
     Animator animator;
@@ -23,16 +27,23 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
     public Vector2 FacingDirection { get; private set; } = Vector2.right;
     public bool IsKnockedBack => knockback.IsKnockedBack;
 
-    // 終結技衝撞過程中完全免疫傷害,擊退也一併免疫(見 Q15:免傷時不該還會被打飛)
+    // 終結技衝撞過程中免疫擊退(見 Q15:免傷時不該還會被打飛)
     protected virtual bool CanBeKnockedBack => !ultimateSkill.IsActive;
+    // 是否免傷:預設跟 CanBeKnockedBack 綁在一起(貓咪超人的大招衝撞免控也免傷),
+    // 但兩者不一定要相同(例如免控但仍會受傷的蓄力技),所以拆成獨立的 virtual 屬性,子類別可以各自覆寫
+    protected virtual bool IsDamageImmune => !CanBeKnockedBack;
 
     // 給 UI 讀取狀態用
     public float Health => stats.Health;
     public float MaxHealth => stats.baseHealth;
     public float S1_CooldownCurrent => dashSkill.CooldownCurrent;
     public float S1_Cooldown => dashSkill.Cooldown;
-    public float S2_CooldownCurrent => stats.Charge;
-    public float S2_Cooldown => PlayerStats.MaxCharge;
+    public float S2_CooldownCurrent => ultimateSkill.CooldownCurrent;
+    public float S2_Cooldown => ultimateSkill.Cooldown;
+    // 大招 UI 文字格式:充能制(SuperCat)顯示「目前/上限」比較合理,純冷卻制(例如赤井)顯示剩餘秒數才有意義,見 UIManager.UpdateS2
+    public virtual bool S2_ShowSecondsFormat => false;
+    public Sprite S1_Icon => s1Icon;
+    public Sprite S2_Icon => s2Icon;
 
     protected virtual void Awake() {
         rb = GetComponent<Rigidbody2D>();
@@ -91,7 +102,7 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
 
     public virtual void TakeDamage(float amount)
     {
-        float multiplier = CanBeKnockedBack ? 1f : 0f; // 跟擊退共用同一個無敵判斷(見 CanBeKnockedBack)
+        float multiplier = IsDamageImmune ? 0f : 1f;
         float actualDamage = amount * multiplier;
         stats.Health -= actualDamage;
 

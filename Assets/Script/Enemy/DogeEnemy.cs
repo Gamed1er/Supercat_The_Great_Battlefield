@@ -26,15 +26,18 @@ public class DogeEnemy : EnemyBase {
     public float biteThresholdY = -2.5f; // 玩家 y 低於這個值時,攻擊改用咬而非跳躍
     public float biteChaseDuration = 1f; // 追擊這麼久之後就咬一下,不用真的追到
 
-    [Header("大狗叫 (二階段)")]
-    public float bigBarkChargeDuration = 1.5f;
-    public float bigBarkSweepAngle = 120f; // 度
-    public float bigBarkRotationSpeed = 90f; // 度/秒
-    public float bigBarkBeamLength = 24f;
-    public float bigBarkBeamWidth = 1.5f;
-    public float bigBarkBeamGap = 1f; // 音波離狗的距離,不直接貼身
+    [Header("大狗叫 (二階段:連續發射數顆彎曲長條音波)")]
+    public float bigBarkChargeDuration = 1.5f; // 第 1 顆音波的蓄力時間(含嘴巴開合 chatter)
+    public float bigBarkBeamLength = 5.25f; // 彈體本身的長度(不是舊掃射設計那種貫穿全場的長度,單顆子彈不需要那麼長)
+    public float bigBarkBeamWidth = 0.9f;
+    public float bigBarkBeamGap = 1.5f; // 音波離狗的距離,不直接貼身
     public float bigBarkCooldown = 10f;
     public GameObject sonicWavePrefab;
+
+    const int sonicWaveCount = 6; // 一次大狗叫總共發射幾顆(蓄力 1 秒 + 發射期 2.1 秒,發射期均分成 sonicWaveCount-1 段間隔)
+    const float sonicWaveInterval = 2.1f / 5f; // 第 2 顆以後,每顆各自的預告/蓄力時間,同時也是發射間隔(2.1 秒發射期 ÷ 5 段間隔)
+    const float sonicWaveRandomOffsetDeg = 30f; // 瞄準玩家方向後的隨機偏移範圍(正負)
+    const float sonicWaveBarkCloseDelay = 0.15f; // 每顆發射瞬間嘴巴張開後,幾秒內關閉
 
     [Header("接觸傷害")]
     public float contactKnockbackDistance = 0.5f; // 咬/跳/一般碰撞的微幅擊退距離,只有水平分量(見 OnTriggerStay2D)
@@ -90,14 +93,18 @@ public class DogeEnemy : EnemyBase {
     }
 
     void Update() {
-        if (IsDead || player == null || isPerformingAction || IsKnockedBack) return;
+        if (IsDead || player == null) return;
+
+        // 大狗叫冷卻不管狗仔正在跳/咬/硬直都持續倒數,只是倒數到 0 時不會打斷正在進行的動作,
+        // 而是等下面的動作判斷放行(isPerformingAction/IsKnockedBack 都結束)後才真正施放。
+        if (IsPhase2 && hasEnteredPhase2) bigBarkCooldownTimer -= Time.deltaTime;
+
+        if (isPerformingAction || IsKnockedBack) return;
 
         if (IsPhase2) {
             if (!hasEnteredPhase2) {
                 hasEnteredPhase2 = true;
                 bigBarkCooldownTimer = 0f; // 剛進入二階段立刻施放一次大狗叫
-            } else {
-                bigBarkCooldownTimer -= Time.deltaTime;
             }
 
             if (bigBarkCooldownTimer <= 0f) {
@@ -210,6 +217,9 @@ public class DogeEnemy : EnemyBase {
         isPerformingAction = false;
     }
 
+    // 走到場地中央後,依序發射 sonicWaveCount 顆音波:第 1 顆蓄力 bigBarkChargeDuration 秒(含嘴巴開合 chatter),
+    // 第 2 顆以後,每顆的預告時間就是發射間隔(sonicWaveInterval),且都在前一顆發射的瞬間才生成,讓玩家看得到排列再閃。
+    // 每顆發射時都瞄準當下玩家方向,疊加隨機偏移;每顆發射瞬間額外觸發一次獨立的張嘴/閉嘴(BarkBlipRoutine)。
     IEnumerator BigBarkRoutine() {
         isPerformingAction = true;
         isBigBarking = true; // 大狗叫全程(含移動到定位)不可被打斷
@@ -220,49 +230,70 @@ public class DogeEnemy : EnemyBase {
             yield return new WaitForFixedUpdate();
         }
 
-        bool aimRight = Random.value < 0.5f; // 每次隨機從左邊或右邊發射,不鎖定玩家所在側
-        spriteRenderer.flipX = !aimRight; // 蓄力時面向音波會出來的那一側
-
+        SetFacing(player.position.x - rb.position.x);
         AudioManager.Instance.PlaySFX("DogeWave");
 
-        // 蓄力期間先生成音波,讓它在 bigBarkChargeDuration 內漸漸淡入,同時嘴巴不停開合
-        GameObject wave = null;
-        SonicWave sonicWave = null;
-        if (sonicWavePrefab != null) {
-            wave = Instantiate(sonicWavePrefab, transform.position, Quaternion.identity);
-            wave.TryGetComponent(out sonicWave);
-            sonicWave?.Init(transform, aimRight, bigBarkSweepAngle, bigBarkRotationSpeed, bigBarkBeamLength, bigBarkBeamWidth, bigBarkBeamGap, baseAttack);
+        SonicWave nextWave = SpawnAimedWave();
+        for (int i = 0; i < sonicWaveCount; i++) {
+            SonicWave currentWave = nextWave;
+            float chargeDuration = i == 0 ? bigBarkChargeDuration : sonicWaveInterval;
+
+            yield return StartCoroutine(ChargeWave(currentWave, chargeDuration, animateMouth: i == 0));
+
+            currentWave?.Launch();
+            StartCoroutine(BarkBlipRoutine());
+
+            nextWave = i < sonicWaveCount - 1 ? SpawnAimedWave() : null;
         }
-
-        float chargeElapsed = 0f;
-        float mouthTimer = 0f;
-        bool mouthOpen = false;
-        while (chargeElapsed < bigBarkChargeDuration) {
-            float dt = Time.deltaTime;
-            chargeElapsed += dt;
-            mouthTimer += dt;
-
-            if (mouthTimer >= mouthAnimDuration) {
-                mouthTimer = 0f;
-                mouthOpen = !mouthOpen;
-                animator.SetTrigger(mouthOpen ? "OpenMouth" : "CloseMouth");
-            }
-
-            sonicWave?.SetChargingVisual(chargeElapsed / bigBarkChargeDuration);
-
-            yield return null;
-        }
-
-        sonicWave?.BeginSweep();
-
-        float sweepDuration = bigBarkSweepAngle / bigBarkRotationSpeed;
-        yield return new WaitForSeconds(sweepDuration);
-
-        if (wave != null) Destroy(wave);
 
         bigBarkCooldownTimer = bigBarkCooldown;
         isBigBarking = false;
         isPerformingAction = false;
+    }
+
+    // 生成一顆音波,瞄準當下玩家方向再疊加隨機偏移;沒有指定 sonicWavePrefab 時回傳 null(呼叫端都用 ?. 處理)
+    SonicWave SpawnAimedWave() {
+        if (sonicWavePrefab == null) return null;
+
+        Vector2 toPlayer = (Vector2)player.position - rb.position;
+        float aimAngle = Mathf.Atan2(toPlayer.y, toPlayer.x) * Mathf.Rad2Deg + Random.Range(-sonicWaveRandomOffsetDeg, sonicWaveRandomOffsetDeg);
+        Vector2 direction = new Vector2(Mathf.Cos(aimAngle * Mathf.Deg2Rad), Mathf.Sin(aimAngle * Mathf.Deg2Rad));
+
+        GameObject waveObj = Instantiate(sonicWavePrefab, transform.position, Quaternion.identity);
+        waveObj.TryGetComponent(out SonicWave wave);
+        wave?.Init(direction, bigBarkBeamGap, bigBarkBeamLength, bigBarkBeamWidth, baseAttack);
+        return wave;
+    }
+
+    // 蓄力/預告 duration 秒,期間讓音波淡入;animateMouth 時額外播放原本的嘴巴開合 chatter(只有第 1 顆用到)
+    IEnumerator ChargeWave(SonicWave wave, float duration, bool animateMouth) {
+        float elapsed = 0f;
+        float mouthTimer = 0f;
+        bool mouthOpen = false;
+
+        while (elapsed < duration) {
+            float dt = Time.deltaTime;
+            elapsed += dt;
+
+            if (animateMouth) {
+                mouthTimer += dt;
+                if (mouthTimer >= mouthAnimDuration) {
+                    mouthTimer = 0f;
+                    mouthOpen = !mouthOpen;
+                    animator.SetTrigger(mouthOpen ? "OpenMouth" : "CloseMouth");
+                }
+            }
+
+            wave?.SetChargingVisual(elapsed / duration);
+            yield return null;
+        }
+    }
+
+    // 每顆音波發射瞬間的短促張嘴/閉嘴,獨立於 ChargeWave 的蓄力嘴巴動畫,跟外層迴圈同時進行不互相等待
+    IEnumerator BarkBlipRoutine() {
+        animator.SetTrigger("OpenMouth");
+        yield return new WaitForSeconds(sonicWaveBarkCloseDelay);
+        animator.SetTrigger("CloseMouth");
     }
 
     // 大招命中時打斷跳/咬的動作(大狗叫因為 CanBeKnockedBack 擋掉,不會被中斷到)

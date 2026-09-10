@@ -4512,8 +4512,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   levelData: {fileID: 11400000, guid: c84302928d6e47c46883d81820968aeb, type: 2}
-  difficulty: 0
-  playerPrefab: {fileID: 1000001, guid: 7d6dd06119c142ba9d087df03b9e431d, type: 3}
+  difficulty: 4
+  playerPrefab: {fileID: 124627921021466987, guid: b93d54e5b967fb8459710ed07d9613fb, type: 3}
 --- !u!1 &2043541255
 GameObject:
   m_ObjectHideFlags: 0
