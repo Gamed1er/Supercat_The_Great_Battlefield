@@ -13,6 +13,9 @@ public class LevelManager : MonoBehaviour {
 
     [SerializeField] GameObject playerPrefab;
 
+    // 玩家自動回血的關卡倍率,依難度(0~5)直接對應,難度越高倍率越低;索引 = difficulty,見 RegenLevelMultiplier
+    static readonly float[] regenLevelMultiplierByDifficulty = { 1.6f, 1.45f, 1.3f, 1.15f, 1f, 0.75f };
+
     public static LevelManager Instance { get; private set; }
 
     readonly List<EnemyBase> enemies = new List<EnemyBase>();
@@ -20,6 +23,7 @@ public class LevelManager : MonoBehaviour {
     bool levelCleared;
 
     public string LevelName => levelData.levelName;
+    public float RegenLevelMultiplier => regenLevelMultiplierByDifficulty[Mathf.Clamp(difficulty, 0, EnemyBase.MaxDifficulty)];
 
     // 怪池目前總血量 / 關卡開始時的總血量,分母固定,打死小怪時血條會明顯掉一塊
     public float EnemyGroupHealthRatio {

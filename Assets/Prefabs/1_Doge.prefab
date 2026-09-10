@@ -165,7 +165,7 @@ MonoBehaviour:
   health: 300
   baseAttack: 5
   healthMultiplier: 1.2
-  attackMultiplier: 1.2
+  attackMultiplier: 1.4
   knockbackDuration: 0.5
   hitEffectPrefab: {fileID: 4000001, guid: 5a818eb93b5045e0a6af51105775f2eb, type: 3}
   moveSpeed: 7

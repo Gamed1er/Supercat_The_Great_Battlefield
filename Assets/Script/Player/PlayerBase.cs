@@ -45,7 +45,9 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
     }
 
     public virtual void Update() {
-        if (Time.timeScale == 0f) return; // 暫停(設定選單開啟中)時不接收任何移動/技能輸入
+        if (Time.timeScale == 0f) return; // 暫停(設定選單開啟中)時不接收任何移動/技能輸入,自動回血也一併暫停
+
+        if (LevelManager.Instance != null) stats.TickRegen(Time.deltaTime, LevelManager.Instance.RegenLevelMultiplier);
 
         moveInput = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")).normalized;
         if (moveInput != Vector2.zero) FacingDirection = moveInput;
@@ -126,14 +128,18 @@ public class PlayerStats
     public float baseAttack;
     public float baseHealth;
     public float moveSpeed;
+    public float healthRegenMultiplier; // 自動回血倍率,角色專屬數值,預設 1
 
     public float Health;
     public float Charge;
 
-    public PlayerStats(float attack, float health, float moveSpeed){
+    float regenTimer; // 累積時間,見 TickRegen:每經過 1/(每秒回血量) 秒回 1 點血,而非逐幀回小數血量
+
+    public PlayerStats(float attack, float health, float moveSpeed, float healthRegenMultiplier = 1f){
         baseAttack = attack;
         baseHealth = health;
         this.moveSpeed = moveSpeed;
+        this.healthRegenMultiplier = healthRegenMultiplier;
         Health = baseHealth;
     }
 
@@ -145,5 +151,25 @@ public class PlayerStats
 
     public void SpendCharge(float amount) {
         Charge = Mathf.Max(Charge - amount, 0f);
+    }
+
+    // 自動回血:每秒回血量 = 最大生命 1% * 角色回血倍率 * 關卡倍率,換算成「每隔多久回 1 血」,累積到滿足間隔才真正加血,
+    // 而不是逐幀加零點幾點血——例如每秒回 2.5 點,實際效果是每 0.4 秒回 1 點血。
+    public void TickRegen(float deltaTime, float levelMultiplier) {
+        if (Health >= baseHealth) {
+            regenTimer = 0f;
+            return;
+        }
+
+        float healPerSecond = baseHealth * 0.01f * healthRegenMultiplier * levelMultiplier;
+        if (healPerSecond <= 0f) return;
+
+        float interval = 1f / healPerSecond;
+        regenTimer += deltaTime;
+
+        while (regenTimer >= interval && Health < baseHealth) {
+            regenTimer -= interval;
+            Health = Mathf.Min(Health + 1f, baseHealth);
+        }
     }
 }
