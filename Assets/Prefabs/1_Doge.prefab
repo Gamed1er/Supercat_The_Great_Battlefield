@@ -179,11 +179,13 @@ MonoBehaviour:
   biteThresholdY: -2.5
   biteChaseDuration: 1.5
   bigBarkChargeDuration: 1
-  bigBarkBeamLength: 5.25
-  bigBarkBeamWidth: 0.9
-  bigBarkBeamGap: 1.5
   bigBarkCooldown: 10
   sonicWavePrefab: {fileID: 5000001, guid: 7c6c26c21bea45b8ad40f41179e96fc9, type: 3}
+  bigBarkRounds: 3
+  bulletsPerGroup: 5
+  smallSpacingDeg: 4
+  bigSpacingDeg: 20
+  bigBarkRoundInterval: 0.8
   contactKnockbackDistance: 0.5
 --- !u!95 &7859453294047258998
 Animator:
