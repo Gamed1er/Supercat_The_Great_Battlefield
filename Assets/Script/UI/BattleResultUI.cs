@@ -16,19 +16,24 @@ public class BattleResultUI : MonoBehaviour {
         public int amount;
     }
 
-    const float HudSlideDuration = 0.3f;
-    const float ResultTextSlideDuration = 0.5f;
-    const float VictoryRewardDelay = 1f; // 「完全勝利」文字滑入完成後,等這麼久才跳出第一個獎勵黑框
+    const float HudSlideDuration = 1f; // UI 隱藏動畫時間,勝利/失敗共用
+    const float ResultTextSlideDuration = 1.5f;
+    const float DetailsRevealDelay = 2f; // 黑框/回大廳按鈕最早出現的時間,從結算動畫一開始算起(不是從前面動畫播完才開始算)
+    const float InfoBoxScaleDuration = 0.2f; // 黑框從小放大進場的時間
     const float DeathMoveDuration = 0.5f; // 死亡瞬間位移到定位點的時間
     const int ScreenDarkenSortingOrder = 1; // 場上其他 SpriteRenderer 目前都是 0,只要比 0 大就會蓋過去
     const int PlayerSortingOrderOverDarken = 2; // 必須比 ScreenDarkenSortingOrder 大,玩家才不會被黑幕蓋住
 
     [Header("HUD (結算時滑出;分別對應「血條」「貓咪狀態」兩個既有 UI 父物件)")]
-    [SerializeField] RectTransform healthBarGroup; // 往上滑出(距離 = 自己的高度)
-    [SerializeField] RectTransform statusGroup; // 往左滑出(距離 = 自己的寬度)
+    // 注意:群組本身的 RectTransform 常常是 size (0,0) 的純掛載節點(子物件各自用 offset 決定位置),
+    // 不能拿群組自己的 rect.width/height 當滑出距離(算出來是 0,滑了也看不出來)——改成直接指定像素距離
+    [SerializeField] RectTransform healthBarGroup; // 往上滑出(距離)
+    [SerializeField] float healthBarSlideDistance = 300f;
+    [SerializeField] RectTransform statusGroup; // 往左滑到指定的絕對 X 座標(不是用距離,起始位置不是 0 時用距離會滑不夠遠、露出一半)
+    [SerializeField] float statusGroupTargetX = -400f;
 
     [Header("結果文字 (勝利/失敗共用同一組,只換文字/顏色)")]
-    [SerializeField] RectTransform resultTextRoot; // 錨點/軸心需為正中央,從畫面右側滑入
+    [SerializeField] RectTransform resultTextRoot; // 錨點/軸心需為正中央,從畫面上方滑入
     [SerializeField] Text resultText;
     [SerializeField] Color victoryColor = Color.white;
     [SerializeField] Color defeatColor = Color.white;
@@ -45,10 +50,16 @@ public class BattleResultUI : MonoBehaviour {
     [SerializeField] float returnButtonOffsetY = -350f;
 
     [Header("失敗:死亡定位")]
-    [SerializeField] float deathPositionOffsetY = 1f; // 相對鏡頭定格畫面中心的世界座標高度(world unit),正值往上
+    [SerializeField] float deathPositionOffsetY = 0f; // 相對鏡頭定格畫面中心的世界座標高度(world unit);0 = 正中間
 
     [Header("勝利獎勵清單 (先寫死數字,還沒接存檔系統;複數項目會依序顯示)")]
     [SerializeField] List<RewardEntry> victoryRewards = new List<RewardEntry> { new RewardEntry { label = "XP", amount = 100 } };
+
+    [Header("音效 (檔名對應 Assets/Resources/Audio/SFX/{名稱}.ogg)")]
+    [SerializeField] string victorySfx = "level_pass";
+    [SerializeField] string defeatSfx = "level_fail";
+    [SerializeField] string rewardBoxSfx = "reward"; // 只有勝利的獎勵框跳出時播,失敗的黑框不用
+    [SerializeField] string buttonClickSfx = "button";
 
     PlayerBase player;
     LevelManager levelManager;
@@ -85,13 +96,19 @@ public class BattleResultUI : MonoBehaviour {
     }
 
     IEnumerator VictorySequence() {
+        float startTime = Time.time;
+
         player.SetSuppressNormalAttack(true);
         player.SetForcedInvincible(true);
 
-        yield return StartCoroutine(SlideHudOut());
-        yield return StartCoroutine(ShowResultText("完全勝利", victoryColor));
+        AudioManager.Instance.StopBGM();
+        AudioManager.Instance.PlaySFX(victorySfx);
 
-        yield return new WaitForSeconds(VictoryRewardDelay);
+        Coroutine resultTextCoroutine = StartCoroutine(ShowResultText("完全勝利", victoryColor)); // 一開始就進場,跟 HUD 滑出同時進行
+        yield return StartCoroutine(SlideHudOut());
+        yield return resultTextCoroutine; // 確保文字動畫也跑完(通常比 HUD 滑出久)
+
+        yield return WaitUntilElapsedSince(startTime, DetailsRevealDelay); // 獎勵黑框最早要在動畫開始後 2 秒才出現
 
         foreach (RewardEntry reward in victoryRewards) {
             yield return StartCoroutine(ShowInfoBoxUntilClicked($"獲得 {reward.label} +{reward.amount}"));
@@ -101,7 +118,12 @@ public class BattleResultUI : MonoBehaviour {
     }
 
     IEnumerator DefeatSequence() {
+        float startTime = Time.time;
+
         levelManager?.PauseAllEnemies(true);
+
+        AudioManager.Instance.StopBGM();
+        AudioManager.Instance.PlaySFX(defeatSfx);
 
         Vector3 cameraPosition = FreezeCameraAndGetPosition();
         float screenHeight = Camera.main != null ? Camera.main.orthographicSize * 2f : 0f;
@@ -110,16 +132,25 @@ public class BattleResultUI : MonoBehaviour {
 
         player.BeginDeathSequence(deathTarget, DeathMoveDuration);
         SpawnScreenDarken(cameraPosition, screenHeight);
+        Coroutine resultTextCoroutine = StartCoroutine(ShowResultText("慘敗...", defeatColor)); // 不等死亡位移跑完,跟黑屏一起進來
 
         yield return new WaitForSeconds(DeathMoveDuration);
 
         yield return StartCoroutine(SlideHudOut());
-        yield return StartCoroutine(ShowResultText("慘敗...", defeatColor));
+        yield return resultTextCoroutine; // 確保文字動畫也跑完(通常比死亡位移+HUD滑出久)
+
+        yield return WaitUntilElapsedSince(startTime, DetailsRevealDelay); // 黑框/按鈕最早要在動畫開始後 2 秒才出現
 
         int enemyPercent = levelManager != null ? Mathf.CeilToInt(levelManager.EnemyGroupHealthRatio * 100f) : 0;
         ShowInfoBoxPersistent($"敵人剩餘血量 {enemyPercent}%");
 
         ShowReturnButton();
+    }
+
+    // 確保從 since 算起至少過了 duration 秒才繼續往下走;前面的動畫如果已經花了比 duration 還久,就不會再多等
+    static IEnumerator WaitUntilElapsedSince(float since, float duration) {
+        float remaining = duration - (Time.time - since);
+        if (remaining > 0f) yield return new WaitForSeconds(remaining);
     }
 
     Vector3 FreezeCameraAndGetPosition() {
@@ -151,17 +182,18 @@ public class BattleResultUI : MonoBehaviour {
     }
 
     IEnumerator SlideHudOut() {
-        Coroutine health = healthBarGroup != null ? StartCoroutine(SlideRect(healthBarGroup, Vector2.up)) : null;
-        Coroutine status = statusGroup != null ? StartCoroutine(SlideRect(statusGroup, Vector2.left)) : null;
+        Coroutine health = healthBarGroup != null ? StartCoroutine(SlideRect(healthBarGroup, Vector2.up * healthBarSlideDistance)) : null;
+        Coroutine status = statusGroup != null
+            ? StartCoroutine(SlideRect(statusGroup, new Vector2(statusGroupTargetX - statusGroup.anchoredPosition.x, 0f)))
+            : null;
 
         if (health != null) yield return health;
         if (status != null) yield return status;
     }
 
-    IEnumerator SlideRect(RectTransform rect, Vector2 direction) {
+    IEnumerator SlideRect(RectTransform rect, Vector2 offset) {
         Vector2 start = rect.anchoredPosition;
-        float distance = direction.y != 0f ? rect.rect.height : rect.rect.width;
-        Vector2 end = start + direction * distance;
+        Vector2 end = start + offset;
 
         float elapsed = 0f;
         while (elapsed < HudSlideDuration) {
@@ -182,8 +214,8 @@ public class BattleResultUI : MonoBehaviour {
         }
 
         float restY = resultTextOffsetY;
-        float startX = CanvasRect().rect.width; // 畫面右側外面
-        Vector2 start = new Vector2(startX, restY);
+        float startY = CanvasRect().rect.height; // 畫面上方外面
+        Vector2 start = new Vector2(0f, startY);
         Vector2 end = new Vector2(0f, restY);
 
         resultTextRoot.anchoredPosition = start;
@@ -199,27 +231,44 @@ public class BattleResultUI : MonoBehaviour {
         resultTextRoot.anchoredPosition = end; // 停留在畫面上,不需要再隱藏
     }
 
-    // 勝利獎勵用:顯示黑框,等畫面任意位置(非其他 UI)點擊一下才隱藏,換下一筆
+    // 勝利獎勵用:顯示黑框(從小放大進場),等畫面任意位置(非其他 UI)點擊一下才隱藏,換下一筆
     IEnumerator ShowInfoBoxUntilClicked(string text) {
         if (infoBoxRoot == null) yield break;
 
         PositionInfoBox();
         if (infoBoxText != null) infoBoxText.text = text;
         infoBoxRoot.SetActive(true);
+        AudioManager.Instance.PlaySFX(rewardBoxSfx); // 只有勝利的獎勵框跳出時播,失敗的 ShowInfoBoxPersistent 不會呼叫到這裡
 
-        yield return null; // 跳過這一幀,避免觸發這次結算的那次點擊被立刻算成確認
+        yield return StartCoroutine(ScaleInfoBoxIn()); // 進場動畫本身已經跨了好幾幀,不用再額外跳一幀擋觸發結算的那次點擊
         yield return new WaitUntil(() => Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject());
 
         infoBoxRoot.SetActive(false);
     }
 
-    // 失敗提示用:顯示黑框後直接常駐,不需要點擊隱藏
+    // 失敗提示用:顯示黑框(從小放大進場)後直接常駐,不需要點擊隱藏
     void ShowInfoBoxPersistent(string text) {
         if (infoBoxRoot == null) return;
 
         PositionInfoBox();
         if (infoBoxText != null) infoBoxText.text = text;
         infoBoxRoot.SetActive(true);
+        StartCoroutine(ScaleInfoBoxIn());
+    }
+
+    IEnumerator ScaleInfoBoxIn() {
+        if (!infoBoxRoot.TryGetComponent(out RectTransform rect)) yield break;
+
+        rect.localScale = Vector3.zero;
+
+        float elapsed = 0f;
+        while (elapsed < InfoBoxScaleDuration) {
+            elapsed += Time.deltaTime;
+            rect.localScale = Vector3.Lerp(Vector3.zero, Vector3.one, elapsed / InfoBoxScaleDuration);
+            yield return null;
+        }
+
+        rect.localScale = Vector3.one;
     }
 
     void PositionInfoBox() {
@@ -238,6 +287,8 @@ public class BattleResultUI : MonoBehaviour {
     }
 
     void OnReturnToLobby() {
+        AudioManager.Instance.PlaySFX(buttonClickSfx);
+
         // 大廳場景還沒做,先印出來確認流程有跑到這一步
         Debug.Log("回大廳(大廳場景尚未製作)");
     }

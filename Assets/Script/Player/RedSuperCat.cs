@@ -7,6 +7,7 @@ public class RedSuperCat : PlayerBase {
 
     const float passiveCooldownReduction = 0.5f; // 被動:命中時縮短戰技/大招冷卻的秒數
 
+    AutoLockShootSkill normalAttackSkill;
     BarrageSkill barrageSkill;
     RadialBurstSkill radialBurstSkill;
 
@@ -24,14 +25,15 @@ public class RedSuperCat : PlayerBase {
         stats = new PlayerStats(attack: attack, health: health, moveSpeed: 7.2f);
 
         // 戰技開火、大招旋轉發射期間都會打斷普攻;大招觸發當下直接打斷戰技(見 RadialBurstSkill.TryExecute)
-        normalAttack = new AutoLockShootSkill(this, bulletPrefab, damageMultiplier: 1.0f, bulletType: BulletType.Destructive,
+        normalAttack = normalAttackSkill = new AutoLockShootSkill(this, bulletPrefab, damageMultiplier: 1.0f, bulletType: BulletType.Destructive,
             onHit: OnProjectileHit, isSuppressed: () => barrageSkill.IsFiring || radialBurstSkill.IsSpinning);
 
+        // 戰技/大招觸發當下都重置普攻冷卻(見 onTrigger),避免技能收尾瞬間普攻剛好同時開火而混淆畫面
         barrageSkill = new BarrageSkill(this, bulletPrefab, damageMultiplier: 1.0f, cooldown: 4.5f,
-            onProjectileHit: OnProjectileHit);
+            onProjectileHit: OnProjectileHit, onTrigger: () => normalAttackSkill.ResetCooldown());
 
         radialBurstSkill = new RadialBurstSkill(this, bulletPrefab, damageMultiplier: 1.0f, cooldown: 20f,
-            barrageSkillToInterrupt: barrageSkill, onProjectileHit: OnProjectileHit);
+            barrageSkillToInterrupt: barrageSkill, onProjectileHit: OnProjectileHit, onTrigger: () => normalAttackSkill.ResetCooldown());
 
         dashSkill = barrageSkill;
         ultimateSkill = radialBurstSkill;

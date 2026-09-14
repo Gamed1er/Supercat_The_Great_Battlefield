@@ -8,7 +8,7 @@ using UnityEngine;
 // 不佔用移動鎖(見 IsActive 恆為 false),旋轉期間的忙碌狀態改由 IsSpinning 對外查詢。
 public class RadialBurstSkill : ISkill {
     const int bulletCount = 20;
-    const float spinDuration = 0.5f; // 觸發後角色順時針轉一圈所需時間,子彈依序在轉到對應角度時發射
+    const float spinDuration = 0.2f; // 觸發後角色順時針轉一圈所需時間,子彈依序在轉到對應角度時發射
     const float bulletSpeedMultiplier = 1f; // 普攻子彈速度的 50%
     const float homingTurnRateDegrees = 0f; // 貓咪超人大招(ChargeRamSkill.homingTurnRateDegrees)的倍數,即「中幅度追蹤」
     const float homingDuration = 5f; // 追蹤 5 秒內沒命中就放棄追蹤,改直線飛行
@@ -20,6 +20,7 @@ public class RadialBurstSkill : ISkill {
     readonly float cooldown;
     readonly Action onProjectileHit;
     readonly ISkill barrageSkillToInterrupt; // 觸發當下打斷戰技(普攻由 AutoLockShootSkill 的 isSuppressed 自行判斷 IsSpinning/戰技是否開火中)
+    readonly Action onTrigger;
 
     public float Cooldown => cooldown;
     // 上限夾在 cooldown:lastTriggerTime 初始值是 -Infinity(代表一開始就緒),若不夾住,Time.time - (-Infinity) 恆為 +Infinity,
@@ -37,13 +38,14 @@ public class RadialBurstSkill : ISkill {
     float damage;
     int nextBulletIndex;
 
-    public RadialBurstSkill(PlayerBase owner, GameObject bulletPrefab, float damageMultiplier, float cooldown, ISkill barrageSkillToInterrupt, Action onProjectileHit) {
+    public RadialBurstSkill(PlayerBase owner, GameObject bulletPrefab, float damageMultiplier, float cooldown, ISkill barrageSkillToInterrupt, Action onProjectileHit, Action onTrigger = null) {
         this.owner = owner;
         this.bulletPrefab = bulletPrefab;
         this.damageMultiplier = damageMultiplier;
         this.cooldown = cooldown;
         this.barrageSkillToInterrupt = barrageSkillToInterrupt;
         this.onProjectileHit = onProjectileHit;
+        this.onTrigger = onTrigger;
     }
 
     public bool TryExecute() {
@@ -55,6 +57,7 @@ public class RadialBurstSkill : ISkill {
 
         lastTriggerTime = Time.time;
         barrageSkillToInterrupt.Interrupt();
+        onTrigger?.Invoke(); // 重置普攻冷卻,避免旋轉收尾時普攻剛好同時開火(見 RedSuperCat 的 onTrigger 接線)
 
         startRotationZ = owner.transform.eulerAngles.z;
         damage = owner.stats.baseAttack * damageMultiplier;

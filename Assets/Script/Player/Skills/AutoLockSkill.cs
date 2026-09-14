@@ -46,4 +46,6 @@ public class AutoLockShootSkill : ISkill {
     public void Interrupt() { }
     public void OnHitEnemy(Collider2D enemyCollider) { }
     public void ReduceCooldown(float seconds) { lastFireTime -= seconds; }
+    // 供其他技能觸發時呼叫,把普攻冷卻重新計時(例如赤井抄太郎的戰技/大招觸發時,避免普攻剛好在技能收尾時同時開火)
+    public void ResetCooldown() { lastFireTime = Time.time; }
 }

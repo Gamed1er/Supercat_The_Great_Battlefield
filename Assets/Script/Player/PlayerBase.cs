@@ -148,6 +148,7 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
 
             if (stats.Health <= 0f) {
                 IsDead = true;
+                animator.SetBool("isDead", true);
                 dashSkill.Interrupt();
                 ultimateSkill.Interrupt();
             }
