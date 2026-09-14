@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 // 共同的東西:血量、移動、輸入接收、充能值
@@ -23,15 +24,20 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
     Animator animator;
     Vector2 moveInput;
     KnockbackState knockback;
+    bool suppressNormalAttack; // 戰鬥結算(勝利)流程用:停止普攻,但移動/其他技能仍可操作
+    bool forcedInvincible; // 戰鬥結算(勝利)流程用:強制免傷,由 BattleResultUI 開關
 
     public Vector2 FacingDirection { get; private set; } = Vector2.right;
     public bool IsKnockedBack => knockback.IsKnockedBack;
+    // 血量歸零時設 true,擋掉受傷/擊退/移動/技能輸入,由 BattleResultUI 接管後續(位移到定位、播失敗流程)
+    public bool IsDead { get; private set; }
 
     // 終結技衝撞過程中免疫擊退(見 Q15:免傷時不該還會被打飛)
     protected virtual bool CanBeKnockedBack => !ultimateSkill.IsActive;
     // 是否免傷:預設跟 CanBeKnockedBack 綁在一起(貓咪超人的大招衝撞免控也免傷),
-    // 但兩者不一定要相同(例如免控但仍會受傷的蓄力技),所以拆成獨立的 virtual 屬性,子類別可以各自覆寫
-    protected virtual bool IsDamageImmune => !CanBeKnockedBack;
+    // 但兩者不一定要相同(例如免控但仍會受傷的蓄力技),所以拆成獨立的 virtual 屬性,子類別可以各自覆寫;
+    // forcedInvincible 是額外疊加的外部開關(戰鬥結算勝利流程用),優先於原本的邏輯
+    protected virtual bool IsDamageImmune => forcedInvincible || !CanBeKnockedBack;
 
     // 給 UI 讀取狀態用
     public float Health => stats.Health;
@@ -57,6 +63,7 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
 
     public virtual void Update() {
         if (Time.timeScale == 0f) return; // 暫停(設定選單開啟中)時不接收任何移動/技能輸入,自動回血也一併暫停
+        if (IsDead) return; // 死亡後完全鎖死輸入,位置交給 BeginDeathSequence 接管
 
         if (LevelManager.Instance != null) stats.TickRegen(Time.deltaTime, LevelManager.Instance.RegenLevelMultiplier);
 
@@ -68,12 +75,14 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
 
         if (IsKnockedBack) return; // 硬直中不能觸發技能
 
-        normalAttack.TryExecute();
+        if (!suppressNormalAttack) normalAttack.TryExecute();
         dashSkill.TryExecute();
         ultimateSkill.TryExecute();
     }
 
     protected virtual void FixedUpdate() {
+        if (IsDead) return; // 位置交給 BeginDeathSequence 的 coroutine 接管,這裡完全不動
+
         bool skillControllingMovement = dashSkill.IsActive || ultimateSkill.IsActive;
         if (!skillControllingMovement && !IsKnockedBack) {
             rb.MovePosition(rb.position + moveInput * stats.moveSpeed * Time.fixedDeltaTime);
@@ -82,6 +91,30 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
         dashSkill.Tick();
         ultimateSkill.Tick();
         knockback.Tick(Time.fixedDeltaTime);
+    }
+
+    // 戰鬥結算(勝利)流程用:停止/恢復普攻,移動與其他技能不受影響
+    public void SetSuppressNormalAttack(bool suppressed) => suppressNormalAttack = suppressed;
+    // 戰鬥結算(勝利)流程用:強制免傷開關
+    public void SetForcedInvincible(bool invincible) => forcedInvincible = invincible;
+
+    // 戰鬥結算(失敗)流程用:死亡瞬間播 KB,並在 duration 秒內位移到 BattleResultUI 算好的定位點(忽略原本擊殺那下的擊退方向)
+    public void BeginDeathSequence(Vector3 targetPosition, float duration) {
+        StartCoroutine(DeathMoveRoutine(targetPosition, duration));
+    }
+
+    IEnumerator DeathMoveRoutine(Vector3 targetPosition, float duration) {
+        animator.SetTrigger("KB");
+
+        Vector3 start = rb.position;
+        float elapsed = 0f;
+        while (elapsed < duration) {
+            elapsed += Time.fixedDeltaTime;
+            rb.MovePosition(Vector2.Lerp(start, targetPosition, elapsed / duration));
+            yield return new WaitForFixedUpdate();
+        }
+
+        rb.MovePosition(targetPosition);
     }
 
     protected virtual void OnCollisionEnter2D(Collision2D collision) {
@@ -102,6 +135,8 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
 
     public virtual void TakeDamage(float amount)
     {
+        if (IsDead) return;
+
         float multiplier = IsDamageImmune ? 0f : 1f;
         float actualDamage = amount * multiplier;
         stats.Health -= actualDamage;
@@ -110,12 +145,18 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
             animator.SetTrigger("KB");
             AudioManager.Instance.PlayRandomHurtSfx();
             if (hitEffectPrefab != null) Instantiate(hitEffectPrefab, transform.position, Quaternion.identity);
+
+            if (stats.Health <= 0f) {
+                IsDead = true;
+                dashSkill.Interrupt();
+                ultimateSkill.Interrupt();
+            }
         }
     }
 
     // 觸發擊退:成功時打斷正在進行的技能位移(比照撞牆的處理方式),回傳是否成功觸發
     public virtual bool TryKnockback(Vector2 direction, float distance) {
-        if (!CanBeKnockedBack) return false;
+        if (IsDead || !CanBeKnockedBack) return false;
         if (!knockback.TryApply(direction, distance, knockbackDuration)) return false;
 
         dashSkill.Interrupt();

@@ -24,6 +24,8 @@ public class LevelManager : MonoBehaviour {
 
     public string LevelName => levelData.levelName;
     public float RegenLevelMultiplier => regenLevelMultiplierByDifficulty[Mathf.Clamp(difficulty, 0, EnemyBase.MaxDifficulty)];
+    // 給 BattleResultUI 輪詢用:是否已通關(所有敵人已死亡),見 Update()
+    public bool LevelCleared => levelCleared;
 
     // 怪池目前總血量 / 關卡開始時的總血量,分母固定,打死小怪時血條會明顯掉一塊
     public float EnemyGroupHealthRatio {
@@ -128,6 +130,11 @@ public class LevelManager : MonoBehaviour {
             enemies.Add(enemy);
             totalStartingHealth += enemy.health; // 不用 enemy.MaxHealth:那要等敵人自己的 Start() 才會設定,時機不保證早於這裡
         }
+    }
+
+    // 戰鬥結算(失敗)流程用:暫停/恢復所有已生成的敵人 AI
+    public void PauseAllEnemies(bool paused) {
+        foreach (EnemyBase enemy in enemies) enemy.SetPaused(paused);
     }
 
     // 鏡頭跟隨玩家,夾在地圖邊界內;CameraFollow 不需要在場景裡手動掛,這裡自動加上去

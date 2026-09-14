@@ -31,6 +31,10 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
 
     public bool IsDead { get; private set; }
     public bool IsKnockedBack => knockback.IsKnockedBack; // 硬直中:子類別應暫停自己的行為邏輯,且不能對玩家造成傷害
+    // 戰鬥結算(玩家死亡)流程用:外部強制暫停 AI,子類別應比照 IsDead/IsKnockedBack 在 Update/FixedUpdate 開頭擋掉
+    public bool IsPaused { get; private set; }
+
+    public void SetPaused(bool paused) => IsPaused = paused;
 
     // 給 UI 血條(怪池總血量加總)讀取用
     public float MaxHealth => maxHealth;

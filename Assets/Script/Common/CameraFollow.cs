@@ -19,6 +19,12 @@ public class CameraFollow : MonoBehaviour {
         this.boundsMax = boundsMax;
     }
 
+    // 戰鬥結算(失敗)流程用:停止跟隨,鏡頭定格在目前位置——
+    // 否則玩家死亡後被位移到畫面固定點時,鏡頭下一幀又會把玩家重新置中,位移效果會被蓋掉、完全看不出來
+    public void Freeze() {
+        target = null;
+    }
+
     void LateUpdate() {
         if (target == null) return;
 

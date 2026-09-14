@@ -93,7 +93,7 @@ public class DogeEnemy : EnemyBase {
     }
 
     void Update() {
-        if (IsDead || player == null) return;
+        if (IsDead || IsPaused || player == null) return;
 
         // 大狗叫冷卻不管狗仔正在跳/咬/硬直都持續倒數,只是倒數到 0 時不會打斷正在進行的動作,
         // 而是等下面的動作判斷放行(isPerformingAction/IsKnockedBack 都結束)後才真正施放。
@@ -129,7 +129,7 @@ public class DogeEnemy : EnemyBase {
 
         if (bodyContactDamageTimer > 0f) bodyContactDamageTimer -= Time.fixedDeltaTime;
 
-        if (IsDead || isPerformingAction || IsKnockedBack) return; // 攻擊中的移動由各自的 Routine 自己處理,硬直中站著不動
+        if (IsDead || IsPaused || isPerformingAction || IsKnockedBack) return; // 攻擊中的移動由各自的 Routine 自己處理,硬直中站著不動
 
         if (Vector2.Distance(rb.position, wanderTarget) < 0.2f) {
             PickNewWanderTarget();
@@ -309,7 +309,7 @@ public class DogeEnemy : EnemyBase {
     // 最多每 bodyContactDamageInterval 秒觸發一次;硬直中不會造成傷害。方位只取水平分量,避免跳躍落地時把玩家往垂直方向推開。
     // 敵人與玩家之間不再有物理碰撞(EnemyBase.Awake 已把碰撞體設為 Trigger),改用 OnTriggerStay2D 偵測接觸。
     void OnTriggerStay2D(Collider2D other) {
-        if (IsDead || IsKnockedBack) return;
+        if (IsDead || IsPaused || IsKnockedBack) return;
         if (bodyContactDamageTimer > 0f) return;
         if (!other.CompareTag("Player")) return;
 
