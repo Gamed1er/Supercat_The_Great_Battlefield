@@ -16,6 +16,7 @@ public class BattleResultUI : MonoBehaviour {
         public int amount;
     }
 
+    const float VictoryStartDelay = 1f; // 整個勝利流程延後這麼久才開始,等最後一隻敵人的死亡淡出動畫先播(見 EnemyBase.DeathFadeRoutine)
     const float HudSlideDuration = 1f; // UI 隱藏動畫時間,勝利/失敗共用
     const float ResultTextSlideDuration = 1.5f;
     const float DetailsRevealDelay = 2f; // 黑框/回大廳按鈕最早出現的時間,從結算動畫一開始算起(不是從前面動畫播完才開始算)
@@ -81,6 +82,20 @@ public class BattleResultUI : MonoBehaviour {
         if (resultTextRoot != null) resultTextRoot.gameObject.SetActive(false);
         if (infoBoxRoot != null) infoBoxRoot.SetActive(false);
         if (returnButtonRoot != null) returnButtonRoot.SetActive(false);
+
+        // 黑框/結果文字本身的 Image/Text 預設會擋 raycast,導致點在它們「上面」時
+        // IsPointerOverGameObject() 判定為真、反而不算數——比照 StoryManager 的做法,
+        // 把這兩個純顯示用物件底下所有 Graphic 的 raycastTarget 關掉,讓「點畫面任意位置」
+        // 真的涵蓋點在它們本身上面的情況(它們都不需要接收點擊,只有 returnButton 才需要)
+        DisableRaycastTarget(infoBoxRoot);
+        if (resultTextRoot != null) DisableRaycastTarget(resultTextRoot.gameObject);
+    }
+
+    static void DisableRaycastTarget(GameObject root) {
+        if (root == null) return;
+        foreach (Graphic graphic in root.GetComponentsInChildren<Graphic>(true)) {
+            graphic.raycastTarget = false;
+        }
     }
 
     void Update() {
@@ -96,8 +111,11 @@ public class BattleResultUI : MonoBehaviour {
     }
 
     IEnumerator VictorySequence() {
+        yield return new WaitForSeconds(VictoryStartDelay); // 等最後一隻敵人的死亡淡出動畫先播完,整個流程才開始
+
         float startTime = Time.time;
 
+        levelManager?.PauseAllEnemies(true);
         player.SetSuppressNormalAttack(true);
         player.SetForcedInvincible(true);
 

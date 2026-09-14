@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 // 沒有任何技能的敵人,純粹用來測試普攻邏輯。有實際行為的敵人繼承這個類別。
@@ -10,6 +11,9 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
     // 難度連續值範圍 0~5(由 LevelManager 在生成敵人後立刻套用,必須早於 Start,詳見 ApplyDifficulty),
     // 數字越大越難;LevelManager 的難度欄位共用這個上限。
     public const int MaxDifficulty = 5;
+
+    const float DeathFadeDelay = 1f; // 死亡後等這麼久才開始隱藏
+    const float DeathFadeDuration = 0.3f; // 隱藏(alpha 淡出)過程的時間
 
     [Header("難度數值 (health/baseAttack 是難度 0 的數值,每 +1 級乘一次對應倍率;難度 5 額外多乘一次拉開落差)")]
     public float health = 50f; // 難度 0 的血量,ApplyDifficulty 後會被覆寫成套用難度後的目前血量
@@ -103,7 +107,33 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
 
         if (health <= 0f) {
             IsDead = true;
-            Debug.Log($"{name} 死亡");
+            StopAllCoroutines(); // 取消所有還在跑的行為(跳躍/大狗叫等),死亡當下立刻打斷,不會播完手上的動作再結束
+
+            if (animator != null) {
+                animator.SetBool("isDeath", true);
+                animator.SetTrigger("KB");
+            }
+
+            StartCoroutine(DeathFadeRoutine());
         }
+    }
+
+    // 死亡 DeathFadeDelay 秒後,花 DeathFadeDuration 秒把 sprite 淡出隱藏,隱藏開始時播放死亡音效
+    IEnumerator DeathFadeRoutine() {
+        yield return new WaitForSeconds(DeathFadeDelay);
+
+        AudioManager.Instance.PlaySFX("death");
+
+        if (!TryGetComponent(out SpriteRenderer spriteRenderer)) yield break;
+
+        Color startColor = spriteRenderer.color;
+        float elapsed = 0f;
+        while (elapsed < DeathFadeDuration) {
+            elapsed += Time.deltaTime;
+            spriteRenderer.color = new Color(startColor.r, startColor.g, startColor.b, Mathf.Lerp(startColor.a, 0f, elapsed / DeathFadeDuration));
+            yield return null;
+        }
+
+        spriteRenderer.color = new Color(startColor.r, startColor.g, startColor.b, 0f);
     }
 }

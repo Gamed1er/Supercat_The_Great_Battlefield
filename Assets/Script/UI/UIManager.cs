@@ -23,12 +23,24 @@ public class UIManager : MonoBehaviour {
     public Text S2_Text; // 充能 n / m
 
     [Header("Enemy")]
-    public Image enemyFillImage; // Fill Amount = 血量比例,1 滿血 / 0 死亡
+    public Image enemyFillImage; // Fill Amount = 血量比例,1 滿血 / 0 死亡,扣血時立刻更新,不延遲
+    public Image enemyWhiteFillImage; // 疊在 enemyFillImage 下方的延遲血條,扣血時慢半拍才追上,做出扣血的視覺延遲感
     public Text enemyNameText; // 敵人名稱,固定顯示,不會變
     public Text enemyHealthText; // 血量百分比,n% (無條件進位)
+    [SerializeField] float enemyWhiteDelay = 0.2f; // 血量下降後,白條要等這麼久才開始追
+    [SerializeField] float enemyWhiteDrainDuration = 0.25f; // 白條追上紅條(平滑 Lerp)花的時間
+
+    enum EnemyWhiteBarState { Idle, Waiting, Draining }
 
     PlayerBase player;
     LevelManager levelManager;
+
+    float enemyLastRatio = 1f; // 上一次看到的血量比例,用來偵測扣血(下降)
+    float enemyWhiteRatio = 1f; // 白條目前顯示的比例
+    EnemyWhiteBarState enemyWhiteState = EnemyWhiteBarState.Idle;
+    float enemyWhiteTimer; // Waiting 時倒數延遲、Draining 時累計經過時間,兩種狀態共用同一個計時器
+    float enemyWhiteDrainFrom; // Draining 起點(白條被打斷當下的位置)
+    float enemyWhiteDrainTo; // Draining 終點(最新的血量比例)
 
     // 用 Start() 而不是 Awake():LevelManager 是在自己的 Awake() 裡動態生成玩家/敵人,
     // 不同物件的 Awake 執行順序不保證,但 Unity 保證所有物件的 Awake 都跑完後才會進到任何一個 Start()
@@ -39,7 +51,12 @@ public class UIManager : MonoBehaviour {
         if (player != null) SetupSkillIcons();
 
         levelManager = LevelManager.Instance;
-        if (levelManager != null && enemyNameText != null) enemyNameText.text = levelManager.LevelName;
+        if (levelManager != null) {
+            if (enemyNameText != null) enemyNameText.text = levelManager.LevelName;
+
+            enemyLastRatio = levelManager.EnemyGroupHealthRatio;
+            enemyWhiteRatio = enemyLastRatio;
+        }
     }
 
     void Update() {
@@ -100,6 +117,40 @@ public class UIManager : MonoBehaviour {
 
         if (enemyFillImage != null) enemyFillImage.fillAmount = ratio;
         if (enemyHealthText != null) enemyHealthText.text = $"{Mathf.CeilToInt(ratio * 100f)}%";
+
+        UpdateEnemyWhiteBar(ratio);
+    }
+
+    // enemyWhiteFillImage 疊在 enemyFillImage 下面:紅條扣血瞬間更新,白條慢半拍才追上,做出扣血的視覺延遲感。
+    // 扣血當下如果白條是閒置的(Idle),先等 enemyWhiteDelay 秒再開始追;如果白條還在等待/還在追(上一次扣血還沒追完),
+    // 新的扣血不會重新等待,而是直接從白條目前所在的位置接著平滑滑向最新的比例,避免連續扣血時白條卡頓。
+    void UpdateEnemyWhiteBar(float ratio) {
+        if (ratio < enemyLastRatio) {
+            enemyWhiteState = enemyWhiteState == EnemyWhiteBarState.Idle ? EnemyWhiteBarState.Waiting : EnemyWhiteBarState.Draining;
+            enemyWhiteTimer = enemyWhiteState == EnemyWhiteBarState.Waiting ? enemyWhiteDelay : 0f;
+            enemyWhiteDrainFrom = enemyWhiteRatio;
+            enemyWhiteDrainTo = ratio;
+        } else if (ratio > enemyLastRatio) {
+            // 敵人目前沒有回血機制;真的發生的話紅白直接一起跳到新值,不做延遲處理
+            enemyWhiteRatio = ratio;
+            enemyWhiteState = EnemyWhiteBarState.Idle;
+        }
+        enemyLastRatio = ratio;
+
+        if (enemyWhiteState == EnemyWhiteBarState.Waiting) {
+            enemyWhiteTimer -= Time.deltaTime;
+            if (enemyWhiteTimer <= 0f) {
+                enemyWhiteState = EnemyWhiteBarState.Draining;
+                enemyWhiteTimer = 0f;
+            }
+        } else if (enemyWhiteState == EnemyWhiteBarState.Draining) {
+            enemyWhiteTimer += Time.deltaTime;
+            float t = enemyWhiteDrainDuration > 0f ? Mathf.Clamp01(enemyWhiteTimer / enemyWhiteDrainDuration) : 1f;
+            enemyWhiteRatio = Mathf.Lerp(enemyWhiteDrainFrom, enemyWhiteDrainTo, t);
+            if (t >= 1f) enemyWhiteState = EnemyWhiteBarState.Idle;
+        }
+
+        if (enemyWhiteFillImage != null) enemyWhiteFillImage.fillAmount = enemyWhiteRatio;
     }
 
     static Color ParseColor(string hex) {
