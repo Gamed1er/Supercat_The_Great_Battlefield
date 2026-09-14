@@ -28,8 +28,23 @@ public class Bullet : MonoBehaviour {
     float homingDuration;
     float homingElapsed;
 
-    public static void Spawn(GameObject prefab, MonoBehaviour owner, Vector3 origin, Vector3 targetPosition, float damage, string targetTag, BulletType bulletType = BulletType.Normal, Action onHit = null,
-        float speed = defaultSpeed, float lifeTime = defaultLifeTime, Transform homingTarget = null, float homingTurnRateDegrees = 0f, float homingDuration = 0f) {
+    public static void Spawn(
+            GameObject prefab,
+            MonoBehaviour owner,
+            Vector3 origin,
+            Vector3 targetPosition,
+            float damage,
+            string targetTag,
+
+            BulletType bulletType = BulletType.Normal,
+            Action onHit = null,
+            float speed = defaultSpeed,
+            float lifeTime = defaultLifeTime,
+            Transform homingTarget = null,
+            float homingTurnRateDegrees = 0f,
+            float homingDuration = 0f
+        ) 
+    {
         GameObject go = prefab != null
             ? UnityEngine.Object.Instantiate(prefab, origin, Quaternion.identity)
             : CreateFallback(origin);
@@ -106,7 +121,7 @@ public class Bullet : MonoBehaviour {
     }
 
     // 破壞性子彈會摧毀撞到的非免疫子彈;兩顆破壞性子彈各自觸發這條規則,結果就是互毀
-    // targetTag 相同代表同陣營(例如同一次大招齊射的 20 顆子彈都打 "Enemy"),彼此不互相影響,
+    // targetTag 相同代表相同的攻擊目標陣營(例如同一次大招齊射的 20 顆子彈都打 "Enemy"),彼此不互相影響,
     // 避免同陣營的破壞性子彈在同一位置生成時,還沒飛開就先自相殘殺
     void HandleBulletCollision(Bullet other) {
         if (targetTag == other.targetTag) return;

@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 // 狗仔:新手教學敵人。目前只有跳躍,血量低於一半進入第二階段,新增大狗叫。
 // 狗被限制在地面矩形範圍內遊走/追擊(範圍由 LevelManager 透過 SetGroundBounds 設定),跳躍時可以暫時跳出範圍。
@@ -26,17 +27,17 @@ public class DogeEnemy : EnemyBase {
     public float biteThresholdY = -2.5f; // 玩家 y 低於這個值時,攻擊改用咬而非跳躍
     public float biteChaseDuration = 1f; // 追擊這麼久之後就咬一下,不用真的追到
 
-    [Header("大狗叫 (二階段:連續發射數顆彎曲長條音波)")]
+    [Header("大狗叫 (二階段:連續發射扇形彈幕)")]
     public float bigBarkChargeDuration = 1.5f; // 第 1 顆音波的蓄力時間(含嘴巴開合 chatter)
-    public float bigBarkBeamLength = 5.25f; // 彈體本身的長度(不是舊掃射設計那種貫穿全場的長度,單顆子彈不需要那麼長)
-    public float bigBarkBeamWidth = 0.9f;
-    public float bigBarkBeamGap = 1.5f; // 音波離狗的距離,不直接貼身
     public float bigBarkCooldown = 10f;
     public GameObject sonicWavePrefab;
+    // 新的大狗叫改為發射子彈的參數
+    public int bigBarkRounds;
+    public int bulletsPerGroup;
+    public float smallSpacingDeg;
+    public float bigSpacingDeg;
+    public float bigBarkRoundInterval;
 
-    const int sonicWaveCount = 6; // 一次大狗叫總共發射幾顆(蓄力 1 秒 + 發射期 2.1 秒,發射期均分成 sonicWaveCount-1 段間隔)
-    const float sonicWaveInterval = 2.1f / 5f; // 第 2 顆以後,每顆各自的預告/蓄力時間,同時也是發射間隔(2.1 秒發射期 ÷ 5 段間隔)
-    const float sonicWaveRandomOffsetDeg = 30f; // 瞄準玩家方向後的隨機偏移範圍(正負)
     const float sonicWaveBarkCloseDelay = 0.15f; // 每顆發射瞬間嘴巴張開後,幾秒內關閉
 
     [Header("接觸傷害")]
@@ -233,17 +234,13 @@ public class DogeEnemy : EnemyBase {
         SetFacing(player.position.x - rb.position.x);
         AudioManager.Instance.PlaySFX("DogeWave");
 
-        SonicWave nextWave = SpawnAimedWave();
-        for (int i = 0; i < sonicWaveCount; i++) {
-            SonicWave currentWave = nextWave;
-            float chargeDuration = i == 0 ? bigBarkChargeDuration : sonicWaveInterval;
+        // 改為彈幕式：重複 bigBarkRounds 輪，每輪同時發射多顆子彈
+        for (int round = 0; round < bigBarkRounds; round++) {
+            float chargeDuration = round == 0 ? bigBarkChargeDuration : bigBarkRoundInterval;
+            yield return StartCoroutine(ChargeRound(chargeDuration, animateMouth: round == 0));
 
-            yield return StartCoroutine(ChargeWave(currentWave, chargeDuration, animateMouth: i == 0));
-
-            currentWave?.Launch();
+            SpawnBigBarkRound();
             StartCoroutine(BarkBlipRoutine());
-
-            nextWave = i < sonicWaveCount - 1 ? SpawnAimedWave() : null;
         }
 
         bigBarkCooldownTimer = bigBarkCooldown;
@@ -251,22 +248,8 @@ public class DogeEnemy : EnemyBase {
         isPerformingAction = false;
     }
 
-    // 生成一顆音波,瞄準當下玩家方向再疊加隨機偏移;沒有指定 sonicWavePrefab 時回傳 null(呼叫端都用 ?. 處理)
-    SonicWave SpawnAimedWave() {
-        if (sonicWavePrefab == null) return null;
-
-        Vector2 toPlayer = (Vector2)player.position - rb.position;
-        float aimAngle = Mathf.Atan2(toPlayer.y, toPlayer.x) * Mathf.Rad2Deg + Random.Range(-sonicWaveRandomOffsetDeg, sonicWaveRandomOffsetDeg);
-        Vector2 direction = new Vector2(Mathf.Cos(aimAngle * Mathf.Deg2Rad), Mathf.Sin(aimAngle * Mathf.Deg2Rad));
-
-        GameObject waveObj = Instantiate(sonicWavePrefab, transform.position, Quaternion.identity);
-        waveObj.TryGetComponent(out SonicWave wave);
-        wave?.Init(direction, bigBarkBeamGap, bigBarkBeamLength, bigBarkBeamWidth, baseAttack);
-        return wave;
-    }
-
-    // 蓄力/預告 duration 秒,期間讓音波淡入;animateMouth 時額外播放原本的嘴巴開合 chatter(只有第 1 顆用到)
-    IEnumerator ChargeWave(SonicWave wave, float duration, bool animateMouth) {
+    // 蓄力/預告（不指定 Wave）: 讓嘴巴在 duration 期間打開/關閉動畫
+    IEnumerator ChargeRound(float duration, bool animateMouth) {
         float elapsed = 0f;
         float mouthTimer = 0f;
         bool mouthOpen = false;
@@ -284,8 +267,30 @@ public class DogeEnemy : EnemyBase {
                 }
             }
 
-            wave?.SetChargingVisual(elapsed / duration);
             yield return null;
+        }
+    }
+
+    // 產生一輪彈幕：groupsPerRound 個小組，每組 bulletsPerGroup 顆，群內間距 smallSpacingDeg，群間間距 bigSpacingDeg
+    void SpawnBigBarkRound() {
+        float phase = bigSpacingDeg + smallSpacingDeg * (bulletsPerGroup - 1);
+        Vector3 origin = transform.position;
+
+        float angle = Random.Range(-phase, phase);
+        while (angle < 180f) {
+            
+            // 群內子彈起始角
+
+            for (int b = 0; b < bulletsPerGroup; b++) {
+                angle += smallSpacingDeg;
+
+                float rad = angle * Mathf.Deg2Rad;
+                Vector3 dir = new Vector3(Mathf.Cos(rad), Mathf.Sin(rad), 0f);
+                Vector3 targetPos = origin + dir; // Bullet.Spawn 會 normalize internally
+
+                Bullet.Spawn(sonicWavePrefab, this, origin, targetPos, baseAttack * 0.5f, targetTag: "Player", speed: 12f, lifeTime: 2f);
+            }
+            angle += bigSpacingDeg; // 下一個群組的起始角
         }
     }
 
