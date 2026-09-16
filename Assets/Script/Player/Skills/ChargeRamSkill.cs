@@ -20,6 +20,7 @@ public class ChargeRamSkill : ISkill {
     // 這樣 UIManager 不用管角色的大招到底是冷卻制還是充能制,一律讀 ultimateSkill.CooldownCurrent/Cooldown 就好(見 PlayerBase.S2_*)
     public float CooldownCurrent => owner.stats.Charge;
     public float Cooldown => PlayerStats.MaxCharge;
+    public float CooldownMultiplier { get; set; } = 1f; // 充能制,沒有時間冷卻可縮放,麻痺對這個技能是 no-op
     public bool IsActive { get; private set; }
 
     float ramElapsed;

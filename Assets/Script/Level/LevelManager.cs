@@ -24,6 +24,8 @@ public class LevelManager : MonoBehaviour {
 
     public string LevelName => levelData.levelName;
     public float RegenLevelMultiplier => regenLevelMultiplierByDifficulty[Mathf.Clamp(difficulty, 0, EnemyBase.MaxDifficulty)];
+    // 地圖最底部的世界座標 y,跟地面系敵人的 groundMin.y 是同一個值;玩家沒有 SetGroundBounds,詛咒 debuff 用這個當下墜終點
+    public float GroundY { get; private set; }
     // 給 BattleResultUI 輪詢用:是否已通關(所有敵人已死亡),見 Update()
     public bool LevelCleared => levelCleared;
 
@@ -46,6 +48,7 @@ public class LevelManager : MonoBehaviour {
         // 不寫死解析度數字,不管遊戲實際跑在什麼比例的螢幕上,倍率的意義都不會跑掉
         Vector2 baseHalfExtent = GetBaseHalfExtent();
         Vector2 halfExtent = new Vector2(baseHalfExtent.x * levelData.mapWidthMultiplier, baseHalfExtent.y * levelData.mapHeightMultiplier);
+        GroundY = -halfExtent.y;
 
         SetupWalls(halfExtent);
         SetupBackground(baseHalfExtent);

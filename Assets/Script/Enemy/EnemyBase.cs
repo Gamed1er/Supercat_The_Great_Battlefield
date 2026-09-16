@@ -24,6 +24,10 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
     public float knockbackDuration = 0.5f; // 被打斷後的硬直時間,子類別可覆寫預設值
     public GameObject hitEffectPrefab; // 受到傷害時的特效
 
+    [Header("妨害效果圖示")]
+    [SerializeField] GameObject debuffIconPrefab; // 掛在敵人身上顯示目前妨害效果的圖示,觸發時才 Instantiate,見 DebuffIconStack
+    [SerializeField] Vector3 debuffIconLocalOffset = new Vector3(0.4f, -0.4f, 0f); // 角色圖像右下方
+
     protected Animator animator; // 沒有 Animator 元件的敵人(例如這個測試用的 EnemyBase)會是 null,SetTrigger 前記得判斷
     protected Rigidbody2D rb;
 
@@ -32,11 +36,20 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
 
     float maxHealth;
     KnockbackState knockback;
+    EnemyDebuffState debuffState;
+    bool wasKnockedBackLastTick; // 偵測 IsKnockedBack 從 true 轉 false 的瞬間,通知圖示疊層擊退已結束
 
     public bool IsDead { get; private set; }
     public bool IsKnockedBack => knockback.IsKnockedBack; // 硬直中:子類別應暫停自己的行為邏輯,且不能對玩家造成傷害
     // 戰鬥結算(玩家死亡)流程用:外部強制暫停 AI,子類別應比照 IsDead/IsKnockedBack 在 Update/FixedUpdate 開頭擋掉
     public bool IsPaused { get; private set; }
+
+    // 妨害效果(我方施加於敵方):眩暈/麻痺/失焦,見 EnemyDebuffState。子類別在自己的 Update/FixedUpdate 讀取這些套用
+    public bool IsStunned => debuffState.IsStunned;
+    public float MoveSpeedMultiplier => debuffState.MoveSpeedMultiplier;
+    public float CooldownTimeMultiplier => debuffState.CooldownTimeMultiplier;
+    public bool HasTargetLock => debuffState.HasTargetLock;
+    public Vector2 TargetLockPosition => debuffState.TargetLockPosition;
 
     public void SetPaused(bool paused) => IsPaused = paused;
 
@@ -54,6 +67,7 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
 
         animator = GetComponent<Animator>();
         knockback = new KnockbackState(rb);
+        debuffState = new EnemyDebuffState(gameObject, debuffIconPrefab, debuffIconLocalOffset);
     }
 
     // 必須晚於 LevelManager 呼叫 ApplyDifficulty(在所有物件的 Awake 都跑完後才會進到這裡),才能抓到套用難度後的血量
@@ -63,6 +77,11 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
 
     protected virtual void FixedUpdate() {
         knockback.Tick(Time.fixedDeltaTime);
+        debuffState.Tick(Time.fixedDeltaTime);
+
+        bool isKnockedBackNow = IsKnockedBack;
+        if (wasKnockedBackLastTick && !isKnockedBackNow) debuffState.NotifyKnockbackEnded();
+        wasKnockedBackLastTick = isKnockedBackNow;
     }
 
     // 依難度算出目前血量/攻擊力,由 LevelManager 在生成敵人後立刻呼叫(必須早於 Start)。
@@ -95,6 +114,36 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
         if (!knockback.TryApply(direction, distance, knockbackDuration)) return false;
 
         if (animator != null) animator.SetTrigger("KB");
+        debuffState.NotifyKnockbackApplied();
+        return true;
+    }
+
+    // 子類別覆寫:打斷手上正在跑的行為(例如 DogeEnemy 的 StopAllCoroutines + 重置 isPerformingAction)。
+    // 眩暈第一次從無到有生效時會呼叫這個,基底類別沒有可打斷的行為,預設空實作。
+    protected virtual void InterruptCurrentAction() { }
+
+    // 妨害效果(我方施加於敵方)對外 API,回傳是否成功套用。
+    // 眩暈沿用 CanBeKnockedBack 這道免疫閘門(跟擊退共用:大狗叫等不可中斷狀態眩暈也打不進去),
+    // 第一次從無到有生效時打斷手上正在跑的行為。
+    public virtual bool TryApplyStun(float duration) {
+        if (IsDead || !CanBeKnockedBack) return false;
+
+        if (debuffState.ApplyStun(duration)) InterruptCurrentAction();
+        return true;
+    }
+
+    // 麻痺:沒有免疫閘門,移動速度/攻擊週期冷卻的縮放由子類別自行讀取 MoveSpeedMultiplier/CooldownTimeMultiplier 套用
+    public virtual bool TryApplySlow(float duration) {
+        if (IsDead) return false;
+        debuffState.ApplySlow(duration);
+        return true;
+    }
+
+    // 失焦:不受 CanBeKnockedBack 影響(不可被打斷的狀態依然會失焦),不可疊加,實際瞄準替換由子類別讀取
+    // HasTargetLock/TargetLockPosition 自行套用(例如 DogeEnemy 的 Jump/Bite 瞄準點)
+    public virtual bool TryApplyTargetLock(Vector2 position, float duration) {
+        if (IsDead) return false;
+        debuffState.ApplyTargetLock(position, duration);
         return true;
     }
 

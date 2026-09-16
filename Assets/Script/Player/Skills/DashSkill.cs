@@ -6,7 +6,8 @@ public class DashSkill : ISkill {
     readonly float cooldown;
     readonly Camera mainCamera;
 
-    public float Cooldown => cooldown;
+    public float Cooldown => cooldown * CooldownMultiplier;
+    public float CooldownMultiplier { get; set; } = 1f;
 
     public float CooldownCurrent => Mathf.Max(0f, Time.time - lastTriggerTime);
     public bool IsActive => false; // 瞬間完成,沒有移動過程需要暫停 WASD 移動或被中斷

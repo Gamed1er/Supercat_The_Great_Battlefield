@@ -98,9 +98,10 @@ public class DogeEnemy : EnemyBase {
 
         // 大狗叫冷卻不管狗仔正在跳/咬/硬直都持續倒數,只是倒數到 0 時不會打斷正在進行的動作,
         // 而是等下面的動作判斷放行(isPerformingAction/IsKnockedBack 都結束)後才真正施放。
-        if (IsPhase2 && hasEnteredPhase2) bigBarkCooldownTimer -= Time.deltaTime;
+        // 眩暈例外:眩暈期間連這個冷卻也一併暫停(見妨害效果設計),麻痺則讓它倒數變慢(CooldownTimeMultiplier)。
+        if (IsPhase2 && hasEnteredPhase2 && !IsStunned) bigBarkCooldownTimer -= Time.deltaTime / CooldownTimeMultiplier;
 
-        if (isPerformingAction || IsKnockedBack) return;
+        if (isPerformingAction || IsKnockedBack || IsStunned) return;
 
         if (IsPhase2) {
             if (!hasEnteredPhase2) {
@@ -114,10 +115,10 @@ public class DogeEnemy : EnemyBase {
             }
         }
 
-        attackCycleTimer -= Time.deltaTime;
+        attackCycleTimer -= Time.deltaTime / CooldownTimeMultiplier;
         if (attackCycleTimer <= 0f) {
             attackCycleTimer = CurrentCycleInterval;
-            if (player.position.y < biteThresholdY) {
+            if (GetTargetPosition().y < biteThresholdY) {
                 StartCoroutine(BiteRoutine()); // 玩家躲太低,跳躍打不到,改用貼地的咬
             } else {
                 StartCoroutine(JumpRoutine());
@@ -125,17 +126,20 @@ public class DogeEnemy : EnemyBase {
         }
     }
 
+    // 失焦期間回傳鎖定的位置,否則回傳玩家目前的即時位置;Jump/Bite 的瞄準都走這個(大狗叫的彈幕本來就不追蹤玩家位置,不受影響)
+    Vector2 GetTargetPosition() => HasTargetLock ? TargetLockPosition : (Vector2)player.position;
+
     protected override void FixedUpdate() {
         base.FixedUpdate(); // 處理擊退位移,子類別覆寫 FixedUpdate 一定要呼叫,不然擊退不會生效
 
         if (bodyContactDamageTimer > 0f) bodyContactDamageTimer -= Time.fixedDeltaTime;
 
-        if (IsDead || IsPaused || isPerformingAction || IsKnockedBack) return; // 攻擊中的移動由各自的 Routine 自己處理,硬直中站著不動
+        if (IsDead || IsPaused || isPerformingAction || IsKnockedBack || IsStunned) return; // 攻擊中的移動由各自的 Routine 自己處理,硬直/眩暈中站著不動
 
         if (Vector2.Distance(rb.position, wanderTarget) < 0.2f) {
             PickNewWanderTarget();
         } else {
-            MoveTowards(wanderTarget, moveSpeed);
+            MoveTowards(wanderTarget, moveSpeed * MoveSpeedMultiplier);
         }
     }
 
@@ -166,8 +170,9 @@ public class DogeEnemy : EnemyBase {
         isPerformingAction = true;
 
         Vector2 start = rb.position;
-        float targetX = player.position.x; // 只鎖定水平方向;跳躍最高點會鎖定比玩家高一點的位置,但落地一定回到起跳的地面高度,不會卡在半空中
-        float peakY = Mathf.Max(start.y + jumpHeight, player.position.y + 1f);
+        Vector2 aimPosition = GetTargetPosition(); // 失焦期間用鎖定位置瞄準,否則用玩家即時位置
+        float targetX = aimPosition.x; // 只鎖定水平方向;跳躍最高點會鎖定比瞄準點高一點的位置,但落地一定回到起跳的地面高度,不會卡在半空中
+        float peakY = Mathf.Max(start.y + jumpHeight, aimPosition.y + 1f);
         if (difficulty < MaxDifficulty) peakY = Mathf.Min(peakY, maxJumpPeakYBelowMaxDifficulty); // 難度 5 以下限制跳躍最高點,難度 5 維持現狀
         float peakHeight = peakY - start.y;
 
@@ -204,8 +209,8 @@ public class DogeEnemy : EnemyBase {
             elapsed += Time.fixedDeltaTime;
 
             Vector2 current = rb.position;
-            Vector2 target = new Vector2(player.position.x, current.y); // 咬是貼地攻擊,只追水平方向
-            MoveTowards(target, chaseSpeed);
+            Vector2 target = new Vector2(GetTargetPosition().x, current.y); // 咬是貼地攻擊,只追水平方向
+            MoveTowards(target, chaseSpeed * MoveSpeedMultiplier);
 
             yield return new WaitForFixedUpdate();
         }
@@ -227,7 +232,7 @@ public class DogeEnemy : EnemyBase {
 
         Vector2 barkPos = new Vector2(0f, groundMin.y);
         while (Vector2.Distance(rb.position, barkPos) > 0.1f) {
-            MoveTowards(barkPos, moveSpeed);
+            MoveTowards(barkPos, moveSpeed * MoveSpeedMultiplier);
             yield return new WaitForFixedUpdate();
         }
 
@@ -301,12 +306,18 @@ public class DogeEnemy : EnemyBase {
         animator.SetTrigger("CloseMouth");
     }
 
+    // 打斷手上正在跑的行為(跳/咬/移動到大狗叫定位點):擊退命中、或眩暈第一次從無到有生效時都會呼叫這個
+    // (大狗叫本身因為 CanBeKnockedBack 擋掉兩者,不會被中斷到)
+    protected override void InterruptCurrentAction() {
+        StopAllCoroutines();
+        isPerformingAction = false;
+    }
+
     // 大招命中時打斷跳/咬的動作(大狗叫因為 CanBeKnockedBack 擋掉,不會被中斷到)
     public override bool TryKnockback(Vector2 direction, float distance) {
         if (!base.TryKnockback(direction, distance)) return false;
 
-        StopAllCoroutines();
-        isPerformingAction = false;
+        InterruptCurrentAction();
         return true;
     }
 
@@ -314,7 +325,7 @@ public class DogeEnemy : EnemyBase {
     // 最多每 bodyContactDamageInterval 秒觸發一次;硬直中不會造成傷害。方位只取水平分量,避免跳躍落地時把玩家往垂直方向推開。
     // 敵人與玩家之間不再有物理碰撞(EnemyBase.Awake 已把碰撞體設為 Trigger),改用 OnTriggerStay2D 偵測接觸。
     void OnTriggerStay2D(Collider2D other) {
-        if (IsDead || IsPaused || IsKnockedBack) return;
+        if (IsDead || IsPaused || IsKnockedBack || IsStunned) return;
         if (bodyContactDamageTimer > 0f) return;
         if (!other.CompareTag("Player")) return;
 

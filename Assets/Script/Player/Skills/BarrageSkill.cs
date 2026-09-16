@@ -17,9 +17,10 @@ public class BarrageSkill : ISkill {
     readonly Action onTrigger;
     readonly Camera mainCamera;
 
-    public float Cooldown => cooldown;
-    // 上限夾在 cooldown,理由同 RadialBurstSkill:避免 lastTriggerTime 還沒被觸發過(-Infinity)時,CooldownCurrent 變成 +Infinity
-    public float CooldownCurrent => Mathf.Min(cooldown, Mathf.Max(0f, Time.time - lastTriggerTime));
+    public float Cooldown => cooldown * CooldownMultiplier;
+    public float CooldownMultiplier { get; set; } = 1f;
+    // 上限夾在 Cooldown,理由同 RadialBurstSkill:避免 lastTriggerTime 還沒被觸發過(-Infinity)時,CooldownCurrent 變成 +Infinity
+    public float CooldownCurrent => Mathf.Min(Cooldown, Mathf.Max(0f, Time.time - lastTriggerTime));
     public bool IsActive => false; // 開火期間不鎖 WASD 移動(見設計決議),忙碌狀態改由 IsFiring 對外查詢
     public bool IsFiring { get; private set; }
     float lastTriggerTime = -Mathf.Infinity;
@@ -43,7 +44,7 @@ public class BarrageSkill : ISkill {
         if (!Input.GetMouseButtonDown(0)) return false;
         if (isSuppressed != null && isSuppressed()) return false; // 大招蓄力中,不能放戰技
 
-        if (Time.time - lastTriggerTime < cooldown) {
+        if (Time.time - lastTriggerTime < Cooldown) {
             AudioManager.Instance.PlaySFX("no");
             return false;
         }

@@ -13,8 +13,11 @@ public class AutoLockShootSkill : ISkill {
     readonly Camera mainCamera;
 
     public float CooldownCurrent => Mathf.Max(0f, Cooldown - (Time.time - lastFireTime));
-    public float Cooldown => 1f;
+    public float Cooldown => baseCooldown * CooldownMultiplier;
+    public float CooldownMultiplier { get; set; } = 1f;
     public bool IsActive => false; // 瞬發技能,沒有進行中的位移狀態
+
+    const float baseCooldown = 1f;
 
     float lastFireTime = -Mathf.Infinity;
 

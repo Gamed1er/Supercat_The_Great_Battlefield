@@ -19,16 +19,24 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
     [SerializeField] Sprite s1Icon; // 技能槽1(dashSkill)的圖示,各角色 prefab 各自指定
     [SerializeField] Sprite s2Icon; // 技能槽2(ultimateSkill)的圖示,各角色 prefab 各自指定
 
+    [Header("妨害效果圖示")]
+    [SerializeField] GameObject debuffIconPrefab; // 掛在角色身上顯示目前妨害效果的圖示,觸發時才 Instantiate,見 DebuffIconStack
+    [SerializeField] Vector3 debuffIconLocalOffset = new Vector3(0.4f, -0.4f, 0f); // 角色圖像右下方
+
     protected Rigidbody2D rb;
     SpriteRenderer spriteRenderer;
     Animator animator;
     Vector2 moveInput;
     KnockbackState knockback;
+    PlayerDebuffState debuffState;
+    bool wasKnockedBackLastTick; // 偵測 IsKnockedBack 從 true 轉 false 的瞬間,通知圖示疊層擊退已結束
     bool suppressNormalAttack; // 戰鬥結算(勝利)流程用:停止普攻,但移動/其他技能仍可操作
     bool forcedInvincible; // 戰鬥結算(勝利)流程用:強制免傷,由 BattleResultUI 開關
 
     public Vector2 FacingDirection { get; private set; } = Vector2.right;
     public bool IsKnockedBack => knockback.IsKnockedBack;
+    public bool IsStunned => debuffState.IsStunned; // 妨害效果:眩暈中,擋掉移動/技能輸入(見 Update/FixedUpdate)
+    public bool IsCursed => debuffState.IsCursed; // 妨害效果:詛咒中,封鎖 dash/ultimate(見 Update),下墜見 FixedUpdate
     // 血量歸零時設 true,擋掉受傷/擊退/移動/技能輸入,由 BattleResultUI 接管後續(位移到定位、播失敗流程)
     public bool IsDead { get; private set; }
 
@@ -59,6 +67,7 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
         knockback = new KnockbackState(rb);
+        debuffState = new PlayerDebuffState(gameObject, debuffIconPrefab, debuffIconLocalOffset);
     }
 
     public virtual void Update() {
@@ -73,24 +82,52 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
         if (moveInput.x > 0) spriteRenderer.flipX = false;
         else if (moveInput.x < 0) spriteRenderer.flipX = true;
 
-        if (IsKnockedBack) return; // 硬直中不能觸發技能
+        if (IsKnockedBack || IsStunned) return; // 硬直/眩暈中不能觸發技能
 
         if (!suppressNormalAttack) normalAttack.TryExecute();
-        dashSkill.TryExecute();
-        ultimateSkill.TryExecute();
+        if (!IsCursed) { // 詛咒封鎖 dash/ultimate,普攻不受影響
+            dashSkill.TryExecute();
+            ultimateSkill.TryExecute();
+        }
     }
 
     protected virtual void FixedUpdate() {
         if (IsDead) return; // 位置交給 BeginDeathSequence 的 coroutine 接管,這裡完全不動
 
+        debuffState.Tick(Time.fixedDeltaTime);
+        ApplyDebuffCooldownEffects();
+
         bool skillControllingMovement = dashSkill.IsActive || ultimateSkill.IsActive;
-        if (!skillControllingMovement && !IsKnockedBack) {
-            rb.MovePosition(rb.position + moveInput * stats.moveSpeed * Time.fixedDeltaTime);
+        if (!skillControllingMovement && !IsKnockedBack && !IsStunned) {
+            Vector2 velocity = debuffState.ApplyCurseToVelocity(moveInput * stats.moveSpeed * debuffState.MoveSpeedMultiplier);
+
+            Vector2 nextPosition = rb.position + velocity * Time.fixedDeltaTime;
+            if (IsCursed && LevelManager.Instance != null) nextPosition.y = Mathf.Max(nextPosition.y, LevelManager.Instance.GroundY);
+            rb.MovePosition(nextPosition);
         }
 
         dashSkill.Tick();
         ultimateSkill.Tick();
         knockback.Tick(Time.fixedDeltaTime);
+
+        bool isKnockedBackNow = IsKnockedBack;
+        if (wasKnockedBackLastTick && !isKnockedBackNow) debuffState.NotifyKnockbackEnded();
+        wasKnockedBackLastTick = isKnockedBackNow;
+    }
+
+    // 麻痺:把冷卻縮放倍率寫進三個技能槽;眩暈:額外把冷卻計時器往後推,讓 Cooldown 在硬直期間完全不前進
+    // (充能制的 ultimateSkill 對 ReduceCooldown 是 no-op,所以眩暈不會影響蓄力進度,見 ChargeRamSkill)
+    void ApplyDebuffCooldownEffects() {
+        float multiplier = debuffState.SkillCooldownMultiplier;
+        normalAttack.CooldownMultiplier = multiplier;
+        dashSkill.CooldownMultiplier = multiplier;
+        ultimateSkill.CooldownMultiplier = multiplier;
+
+        if (IsStunned) {
+            normalAttack.ReduceCooldown(-Time.fixedDeltaTime);
+            dashSkill.ReduceCooldown(-Time.fixedDeltaTime);
+            ultimateSkill.ReduceCooldown(-Time.fixedDeltaTime);
+        }
     }
 
     // 戰鬥結算(勝利)流程用:停止/恢復普攻,移動與其他技能不受影響
@@ -162,6 +199,34 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
 
         dashSkill.Interrupt();
         ultimateSkill.Interrupt();
+        debuffState.NotifyKnockbackApplied();
+        return true;
+    }
+
+    // 妨害效果(敵方施加於我方)對外 API,回傳是否成功套用。
+    // 眩暈沿用 CanBeKnockedBack 這道免疫閘門(跟擊退共用:大招衝撞等不可中斷狀態眩暈也打不進去),
+    // 第一次從無到有生效時比照撞牆/擊退,打斷手上正在跑的 dash/ultimate。
+    public virtual bool TryApplyStun(float duration) {
+        if (IsDead || !CanBeKnockedBack) return false;
+
+        if (debuffState.ApplyStun(duration)) {
+            dashSkill.Interrupt();
+            ultimateSkill.Interrupt();
+        }
+        return true;
+    }
+
+    // 麻痺:沒有免疫閘門,移動速度/技能冷卻的縮放由 FixedUpdate 每幀套用(見 ApplyDebuffCooldownEffects)
+    public virtual bool TryApplySlow(float duration) {
+        if (IsDead) return false;
+        debuffState.ApplySlow(duration);
+        return true;
+    }
+
+    // 詛咒:沒有免疫閘門,下墜/封鎖 dash-ultimate 的實際效果分別在 FixedUpdate/Update 套用
+    public virtual bool TryApplyCurse(float duration) {
+        if (IsDead) return false;
+        debuffState.ApplyCurse(duration);
         return true;
     }
 }

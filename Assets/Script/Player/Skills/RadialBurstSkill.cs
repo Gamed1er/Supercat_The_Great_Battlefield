@@ -22,10 +22,11 @@ public class RadialBurstSkill : ISkill {
     readonly ISkill barrageSkillToInterrupt; // 觸發當下打斷戰技(普攻由 AutoLockShootSkill 的 isSuppressed 自行判斷 IsSpinning/戰技是否開火中)
     readonly Action onTrigger;
 
-    public float Cooldown => cooldown;
-    // 上限夾在 cooldown:lastTriggerTime 初始值是 -Infinity(代表一開始就緒),若不夾住,Time.time - (-Infinity) 恆為 +Infinity,
+    public float Cooldown => cooldown * CooldownMultiplier;
+    public float CooldownMultiplier { get; set; } = 1f;
+    // 上限夾在 Cooldown:lastTriggerTime 初始值是 -Infinity(代表一開始就緒),若不夾住,Time.time - (-Infinity) 恆為 +Infinity,
     // UIManager 對這個值做 Mathf.FloorToInt 轉型會溢位成 int.MinValue(顯示異常的一長串負數)
-    public float CooldownCurrent => Mathf.Min(cooldown, Mathf.Max(0f, Time.time - lastTriggerTime));
+    public float CooldownCurrent => Mathf.Min(Cooldown, Mathf.Max(0f, Time.time - lastTriggerTime));
     public bool IsActive => false; // 旋轉期間不鎖 WASD 移動(見設計決議),忙碌狀態改由 IsSpinning 對外查詢
     public bool IsSpinning { get; private set; }
 
@@ -50,7 +51,7 @@ public class RadialBurstSkill : ISkill {
 
     public bool TryExecute() {
         if (!Input.GetMouseButtonDown(1)) return false;
-        if (Time.time - lastTriggerTime < cooldown) {
+        if (Time.time - lastTriggerTime < Cooldown) {
             AudioManager.Instance.PlaySFX("no");
             return false;
         }
