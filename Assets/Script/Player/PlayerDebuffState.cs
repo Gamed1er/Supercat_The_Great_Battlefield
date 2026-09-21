@@ -8,11 +8,10 @@ public class PlayerDebuffState {
     const float slowMoveSpeedMultiplier = 0.5f;
     const float slowCooldownMultiplier = 1.5f;
 
-    const float curseFallAcceleration = 6f; // 詛咒下墜加速度(單位/秒^2),先給合理預設值,可在這裡微調
-    const float curseMaxFallSpeed = 5f; // 詛咒下墜終端速度
-    const float curseUpwardInputMultiplier = 0.15f; // 詛咒期間向上輸入的殘留比例(大幅減弱,但不是完全歸零)
-
     readonly DebuffIconStack iconStack;
+    readonly float curseFallAcceleration; // 詛咒下墜加速度(單位/秒^2),由 PlayerBase 的 Inspector 欄位傳入
+    readonly float curseMaxFallSpeed; // 詛咒下墜終端速度
+    readonly float curseUpwardInputMultiplier; // 詛咒期間向上輸入的殘留比例(大幅減弱,但不是完全歸零)
 
     float stunTimer;
     float slowTimer;
@@ -25,8 +24,12 @@ public class PlayerDebuffState {
     public float MoveSpeedMultiplier => slowTimer > 0f ? slowMoveSpeedMultiplier : 1f;
     public float SkillCooldownMultiplier => slowTimer > 0f ? slowCooldownMultiplier : 1f;
 
-    public PlayerDebuffState(GameObject ownerObject, GameObject iconPrefab, Vector3 iconLocalOffset) {
+    public PlayerDebuffState(GameObject ownerObject, GameObject iconPrefab, Vector3 iconLocalOffset,
+            float curseFallAcceleration, float curseMaxFallSpeed, float curseUpwardInputMultiplier) {
         iconStack = new DebuffIconStack(ownerObject, iconPrefab, iconLocalOffset);
+        this.curseFallAcceleration = curseFallAcceleration;
+        this.curseMaxFallSpeed = curseMaxFallSpeed;
+        this.curseUpwardInputMultiplier = curseUpwardInputMultiplier;
     }
 
     // 疊加只延長時間:回傳這次呼叫是不是「從無到有」的第一次觸發,PlayerBase 用來決定要不要順便打斷手上的技能

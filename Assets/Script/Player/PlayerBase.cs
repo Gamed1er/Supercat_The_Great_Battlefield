@@ -23,6 +23,11 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
     [SerializeField] GameObject debuffIconPrefab; // 掛在角色身上顯示目前妨害效果的圖示,觸發時才 Instantiate,見 DebuffIconStack
     [SerializeField] Vector3 debuffIconLocalOffset = new Vector3(0.4f, -0.4f, 0f); // 角色圖像右下方
 
+    [Header("詛咒數值")]
+    [SerializeField] float curseFallAcceleration = 6f; // 下墜加速度(單位/秒^2)
+    [SerializeField] float curseMaxFallSpeed = 5f; // 下墜終端速度
+    [SerializeField] float curseUpwardInputMultiplier = 0.15f; // 向上輸入的殘留比例(大幅減弱,但不是完全歸零)
+
     protected Rigidbody2D rb;
     SpriteRenderer spriteRenderer;
     Animator animator;
@@ -67,7 +72,8 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
         knockback = new KnockbackState(rb);
-        debuffState = new PlayerDebuffState(gameObject, debuffIconPrefab, debuffIconLocalOffset);
+        debuffState = new PlayerDebuffState(gameObject, debuffIconPrefab, debuffIconLocalOffset,
+            curseFallAcceleration, curseMaxFallSpeed, curseUpwardInputMultiplier);
     }
 
     public virtual void Update() {
