@@ -9,7 +9,8 @@ using UnityEngine.UI;
 // 驅動場景裡手動接好的 UI(背景/左右立繪/底部對話框/中間強調文字),播完或按 Skip 後直接進 Battle 場景。
 // levelData 目前是 Inspector 手動接一筆固定值(比照 LevelManager.difficulty 的暫時做法),之後選關介面做好再換成動態傳入。
 public class StoryManager : MonoBehaviour {
-    const string SeenKeyPrefix = "Story_Seen_";
+    // public:RivalDialogueManager 也要用同一個 key 判斷「玩家是不是第一次進這關」,見該檔案的 Start()
+    public const string SeenKeyPrefix = "Story_Seen_";
 
     [Header("關卡資料 (暫時手動指定,之後由選關畫面傳入)")]
     [SerializeField] LevelData levelData;

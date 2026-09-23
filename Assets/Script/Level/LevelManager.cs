@@ -21,13 +21,19 @@ public class LevelManager : MonoBehaviour {
     readonly List<EnemyBase> enemies = new List<EnemyBase>();
     float totalStartingHealth;
     bool levelCleared;
+    float battleStartTime;
 
     public string LevelName => levelData.levelName;
+    public LevelData LevelData => levelData; // 給 RivalDialogueManager 讀 levelId/rivalDialogueScript 等設定用
+    public int Difficulty => difficulty; // 給 RivalDialogueManager/BattleResultUI 讀目前難度用
     public float RegenLevelMultiplier => regenLevelMultiplierByDifficulty[Mathf.Clamp(difficulty, 0, EnemyBase.MaxDifficulty)];
     // 地圖最底部的世界座標 y,跟地面系敵人的 groundMin.y 是同一個值;玩家沒有 SetGroundBounds,詛咒 debuff 用這個當下墜終點
     public float GroundY { get; private set; }
     // 給 BattleResultUI 輪詢用:是否已通關(所有敵人已死亡),見 Update()
     public bool LevelCleared => levelCleared;
+    // 從場景生成到通關瞬間經過的時間(用 Time.time 累計,暫停/Time.timeScale=0 時不會前進,見 Update);
+    // 通關前讀取一律是 0,給 RivalDialogueManager 記錄最快通關時間用
+    public float ClearTimeSeconds { get; private set; }
 
     // 怪池目前總血量 / 關卡開始時的總血量,分母固定,打死小怪時血條會明顯掉一塊
     public float EnemyGroupHealthRatio {
@@ -43,6 +49,7 @@ public class LevelManager : MonoBehaviour {
 
     void Awake() {
         Instance = this;
+        battleStartTime = Time.time;
 
         // 「1 倍率單位 = 1 個螢幕大小」:半寬高直接從攝影機當下的 orthographicSize/aspect 算,
         // 不寫死解析度數字,不管遊戲實際跑在什麼比例的螢幕上,倍率的意義都不會跑掉
@@ -78,6 +85,7 @@ public class LevelManager : MonoBehaviour {
         }
 
         levelCleared = true;
+        ClearTimeSeconds = Time.time - battleStartTime;
         Debug.Log("關卡通關");
     }
 

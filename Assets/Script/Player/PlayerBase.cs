@@ -44,6 +44,10 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
     public bool IsCursed => debuffState.IsCursed; // 妨害效果:詛咒中,封鎖 dash/ultimate(見 Update),下墜見 FixedUpdate
     // 血量歸零時設 true,擋掉受傷/擊退/移動/技能輸入,由 BattleResultUI 接管後續(位移到定位、播失敗流程)
     public bool IsDead { get; private set; }
+    // 這場戰鬥是否被敵人攻擊命中過(用來判定「無傷通關」,見 RivalDialogueManager)。
+    // 刻意跟血量脫鉤而不是看 Health < MaxHealth:只有 TakeDamage 的 fromEnemyAttack 傳 true 才會算進來,
+    // 之後如果有自殘系角色主動對自己傳 fromEnemyAttack: false 扣血,不會誤判成「被打中」。
+    public bool TookEnemyDamageThisRun { get; private set; }
 
     // 終結技衝撞過程中免疫擊退(見 Q15:免傷時不該還會被打飛)
     protected virtual bool CanBeKnockedBack => !ultimateSkill.IsActive;
@@ -176,7 +180,7 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
         }
     }
 
-    public virtual void TakeDamage(float amount)
+    public virtual void TakeDamage(float amount, bool fromEnemyAttack = true)
     {
         if (IsDead) return;
 
@@ -185,6 +189,7 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
         stats.Health -= actualDamage;
 
         if (actualDamage > 0f) {
+            if (fromEnemyAttack) TookEnemyDamageThisRun = true;
             animator.SetTrigger("KB");
             AudioManager.Instance.PlayRandomHurtSfx();
             if (hitEffectPrefab != null) Instantiate(hitEffectPrefab, transform.position, Quaternion.identity);
@@ -238,7 +243,10 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
 }
 
 public interface IDamageable {
-    void TakeDamage(float amount);
+    // fromEnemyAttack:給 PlayerBase 判定「無傷通關」用(見 TookEnemyDamageThisRun),預設 true 讓所有現有呼叫點
+    // (Bullet/MeleeHitbox/DogeEnemy 接觸傷害等,一律透過這個介面呼叫)完全不用改;
+    // 未來自殘系角色對自己扣血時,主動傳 false 即可排除在「被打中」判定之外。EnemyBase 端這個參數目前沒有意義,單純為了介面一致。
+    void TakeDamage(float amount, bool fromEnemyAttack = true);
 }
 
 public interface IKnockbackable {

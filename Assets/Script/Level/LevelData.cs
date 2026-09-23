@@ -18,8 +18,13 @@ public class LevelData : ScriptableObject {
     [Header("顯示 (怪池血條名稱)")]
     public string levelName = "關卡";
 
-    [Header("戰前劇情 (選填;StoryManager 讀這個播,播完/略過後直接進本關卡戰鬥)")]
+    [Header("戰前劇情 (選填;StoryManager 讀這個播,播完/略過後直接進本關卡戰鬥;只在玩家第一次進這關時播放一次)")]
     public TextAsset preBattleStoryScript;
+
+    [Header("對手短台詞 (選填;戰前開場白/戰後結果,依 RivalDialogueSelector 的規則挑選對應 #section 播放,見 RivalDialogueManager)")]
+    public TextAsset rivalDialogueScript;
+    public string rivalCharacterId; // 立繪資料夾名稱,同時是對話框顯示的名稱(比照 StoryManager 的 CharacterId 慣例)
+    public string rivalPortraitExpression = "normal"; // 對應 Resources/Images/Characters/{rivalCharacterId}/{rivalPortraitExpression}
 
     [Header("地圖大小 (倍率, 基準為 LevelManager.BaseHalfWidth/BaseHalfHeight)")]
     public float mapWidthMultiplier = 1f;

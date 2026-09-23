@@ -147,7 +147,7 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
         return true;
     }
 
-    public void TakeDamage(float amount) {
+    public void TakeDamage(float amount, bool fromEnemyAttack = true) {
         if (IsDead || amount <= 0f) return;
 
         health -= amount;

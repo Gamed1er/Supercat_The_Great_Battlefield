@@ -89,6 +89,40 @@ public static class StoryScriptParser {
         }
     }
 
+    // 額外支援 #section <id> 指令的版本,把腳本切成多個獨立區塊,給 RivalDialogueManager 的短句系統用:
+    //   #section <id>   開始一個新區塊,後續內容(#speak/#wait/對話行)都歸這個區塊,直到下一個 #section
+    // 沒有背景/配樂/進出場的概念(那些指令即使誤用也只是被解析進 StoryStep 清單但沒人理它,不會報錯);
+    // 第一個 #section 之前的內容不屬於任何區塊,直接略過。
+    public static Dictionary<string, List<StoryStep>> ParseSections(string scriptText) {
+        var sections = new Dictionary<string, List<StoryStep>>();
+        if (string.IsNullOrEmpty(scriptText)) return sections;
+
+        StorySide currentSpeaker = StorySide.None;
+        List<StoryStep> currentSteps = null;
+
+        foreach (string rawLine in scriptText.Split('\n')) {
+            string line = rawLine.Trim('\r', ' ', '\t');
+            if (line.Length == 0 || line.StartsWith("//")) continue;
+
+            if (line.StartsWith("#section")) {
+                string[] tokens = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                if (tokens.Length < 2) { Debug.LogWarning($"劇情腳本 #section 缺少參數:{line}"); continue; }
+
+                currentSteps = new List<StoryStep>();
+                sections[tokens[1]] = currentSteps;
+                currentSpeaker = StorySide.None;
+                continue;
+            }
+
+            if (currentSteps == null) continue; // 還沒進到任何 #section,不屬於任何區塊
+
+            if (line[0] == '#') ParseCommand(line, currentSteps, ref currentSpeaker);
+            else currentSteps.Add(new StoryStep { Type = StoryStepType.Say, Side = currentSpeaker, Text = line });
+        }
+
+        return sections;
+    }
+
     static bool TryParseSide(string token, out StorySide side) {
         switch (token.ToLowerInvariant()) {
             case "left": side = StorySide.Left; return true;

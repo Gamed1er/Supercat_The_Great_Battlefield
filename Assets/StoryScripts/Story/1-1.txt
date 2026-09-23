@@ -1,0 +1,63 @@
+#bg 1
+#bgm normal_battle
+
+#middle 第零幕、再次初山
+
+#enter left SuperCat idle
+#speak left
+超人貓一如往常的正在四處巡邏
+一邊冒險一邊打擊犯罪
+這對他來講是很棒的消遣
+最重要的是
+他認為這樣很酷很好玩
+
+#enter right Doge idle
+
+#speak left
+就在這時，他偶然遇到了狗仔
+欸欸狗仔，好久不見，你最近過得如何啊？
+
+#speak right
+喔是超人貓啊，我還在準備今年的大學學測啦
+讀書讀累了想出來散步一下
+那你呢?該不會又在到處冒險吧？
+
+#speak left
+那當然！為了維護貓界的和平，我可是一直都很努力的喔！
+
+#speak right
+那你最近有解決什麼事件嗎？
+
+#speak left
+完全沒有
+
+#speak right
+...我就知道，你這麼弱，遇到事件也只會被波及而已吧
+還常常受重傷，真不放心你這樣到處亂跑
+
+#speak left
+我...我哪裡弱了？我會飛欸！
+
+#speak right
+會飛又怎樣？又沒辦法飛的比燕子快
+
+#speak left
+那我馬上去找燕子比速度，你等著看吧！
+
+#speak right
+欸等等，話題偏掉了
+我只是不放心你這麼弱又四處冒險而已
+
+#speak left
+不然你要來當我的夥伴嗎？
+
+#speak right
+才不要勒，我可不希望明年學測又重考
+不如這樣好了，只要你在這裡打敗我，我就承認你變強了
+我就讓你去冒險，如何？
+
+#speak left
+好啊，來吧！
+
+#exit right
+#exit left

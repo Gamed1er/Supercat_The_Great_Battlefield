@@ -1,0 +1,46 @@
+// 對手短台詞:狗仔(超人貓 vs 狗仔)
+// 這份檔案要指定給 LevelData.rivalDialogueScript,由 RivalDialogueManager 依戰績挑選對應的 #section 播放。
+// 開場長篇劇情不在這裡——那個是另一份檔案,用一般的 StoryScriptParser 語法(#enter/#speak/#bg...),
+// 指定給 LevelData.preBattleStoryScript,在 Story.unity 用 StoryManager 播,只在玩家第一次進這關時播一次。
+//
+// 每個區塊只支援單句或多句對話(逐句點擊推進)跟 #wait,沒有背景/配樂/進出場,因為只有狗仔一個角色講話。
+// 區塊 id 對應關係見 RivalDialogueSelector.cs:
+//   戰前開場白: challenge_max > challenge_after_loss > challenge_again
+//   戰後結果(贏): victory_max_no_damage > victory_max > victory_7th > victory_first > victory_again
+//   戰後結果(輸): defeat_max > defeat_after_win > defeat
+
+#section challenge_again
+又來找我玩啦?讓我看看你進步了多少
+
+#section challenge_after_loss
+還不死心嗎?人生可不像學測可以重來喔
+
+#section challenge_max
+這次我也會認真喔,小心點
+
+#section victory_first
+原來你已經進步這麼多了啊
+那你盡情地去冒險吧,但也別忘了偶爾回來看看我喔!
+
+#section victory_again
+不錯呢,要繼續保持喔!
+
+#section victory_7th
+喂,可以讓我回去讀書了吧?
+
+#section victory_max
+你已經是個了不起的戰士了呢
+去更適合你的地方冒險吧!
+
+#section victory_max_no_damage
+欸不是,你作弊了吧
+為什麼我打不到你
+
+#section defeat
+你還是再練練吧
+
+#section defeat_after_win
+有點累了嗎?要不要先休息一下?
+
+#section defeat_max
+需要我稍微放點水嗎?

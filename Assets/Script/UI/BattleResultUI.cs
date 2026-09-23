@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -62,6 +63,9 @@ public class BattleResultUI : MonoBehaviour {
     [SerializeField] string rewardBoxSfx = "reward"; // 只有勝利的獎勵框跳出時播,失敗的黑框不用
     [SerializeField] string buttonClickSfx = "button";
 
+    [Header("對手短台詞 (選填;戰後結果先播這個,播完/沒有符合的台詞才顯示下面的勝負畫面)")]
+    [SerializeField] RivalDialogueManager rivalDialogueManager;
+
     PlayerBase player;
     LevelManager levelManager;
     CameraFollow cameraFollow;
@@ -103,11 +107,24 @@ public class BattleResultUI : MonoBehaviour {
 
         if (player.IsDead) {
             resultTriggered = true;
-            StartCoroutine(DefeatSequence());
+            StartCoroutine(PlayRivalBarkThenContinue(false, () => StartCoroutine(DefeatSequence())));
         } else if (levelManager != null && levelManager.LevelCleared) {
             resultTriggered = true;
-            StartCoroutine(VictorySequence());
+            StartCoroutine(PlayRivalBarkThenContinue(true, () => StartCoroutine(VictorySequence())));
         }
+    }
+
+    // 顯示勝負畫面之前,先讓對手的短台詞播完(沒有符合的台詞就直接繼續,見 RivalDialogueManager.PlaySection)。
+    // rivalDialogueManager 沒接線是設定錯誤,故意不做 null 檢查,讓它直接丟 NullReferenceException(見 CLAUDE.md「Inspector-wired references」)。
+    // 無傷通關的判定用 !player.TookEnemyDamageThisRun,最快通關時間用 levelManager.ClearTimeSeconds
+    // (輸的那場 ClearTimeSeconds 還是 0,但反正 won=false 時 RivalDialogueManager 不會拿這個值去比較最快紀錄)。
+    IEnumerator PlayRivalBarkThenContinue(bool won, Action continuation) {
+        bool barkDone = false;
+        rivalDialogueManager.PlayPostBattleBark(won, !player.TookEnemyDamageThisRun,
+            levelManager != null ? levelManager.ClearTimeSeconds : 0f, () => barkDone = true);
+
+        yield return new WaitUntil(() => barkDone);
+        continuation();
     }
 
     IEnumerator VictorySequence() {
