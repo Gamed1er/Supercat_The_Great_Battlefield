@@ -33,8 +33,7 @@
 去更適合你的地方冒險吧!
 
 #section victory_max_no_damage
-欸不是,你作弊了吧
-為什麼我打不到你
+沒想到你真的飛得比燕子快...
 
 #section defeat
 你還是再練練吧

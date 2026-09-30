@@ -14,6 +14,7 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
 
     const float DeathFadeDelay = 1f; // 死亡後等這麼久才開始隱藏
     const float DeathFadeDuration = 0.3f; // 隱藏(alpha 淡出)過程的時間
+    const float KnockbackDistanceMultiplier = 0.5f; // 所有敵人受到的擊退位移統一打折,原始數值(攻擊端指定的 distance)覺得太誇張
 
     [Header("難度數值 (health/baseAttack 是難度 0 的數值,每 +1 級乘一次對應倍率;難度 5 額外多乘一次拉開落差)")]
     public float health = 50f; // 難度 0 的血量,ApplyDifficulty 後會被覆寫成套用難度後的目前血量
@@ -78,6 +79,9 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
     protected virtual void FixedUpdate() {
         knockback.Tick(Time.fixedDeltaTime);
         debuffState.Tick(Time.fixedDeltaTime);
+        // 暈眩時動畫暫停播放,套用到所有敵人,不用每個子類別各自處理;死亡後停止套用,避免死亡當下還在暈眩中時,
+        // 死亡動畫被卡在 speed=0 直到暈眩計時器跑完(debuffState 不管死活都會繼續 Tick,見上面兩行)
+        if (animator != null) animator.speed = (!IsDead && IsStunned) ? 0f : 1f;
 
         bool isKnockedBackNow = IsKnockedBack;
         if (wasKnockedBackLastTick && !isKnockedBackNow) debuffState.NotifyKnockbackEnded();
@@ -111,7 +115,7 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
     // 硬直時間固定用自己的 knockbackDuration,不受攻擊方指定;distance 給 0 時只有硬直沒有位移。
     public virtual bool TryKnockback(Vector2 direction, float distance) {
         if (IsDead || !CanBeKnockedBack) return false;
-        if (!knockback.TryApply(direction, distance, knockbackDuration)) return false;
+        if (!knockback.TryApply(direction, distance * KnockbackDistanceMultiplier, knockbackDuration)) return false;
 
         if (animator != null) animator.SetTrigger("KB");
         debuffState.NotifyKnockbackApplied();
@@ -147,24 +151,34 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
         return true;
     }
 
-    public void TakeDamage(float amount, bool fromEnemyAttack = true) {
+    // virtual:讓「兩隻共用一包血量」這類特殊情境(見 PairedBossEnemy)可以整個覆寫傷害/免傷計算,
+    // 不必被這裡的單純扣血邏輯綁住;一般敵人(狗仔等)不需要覆寫,維持原本行為。
+    public virtual void TakeDamage(float amount, bool fromEnemyAttack = true) {
         if (IsDead || amount <= 0f) return;
 
         health -= amount;
         AudioManager.Instance.PlayRandomHurtSfx();
         if (hitEffectPrefab != null) Instantiate(hitEffectPrefab, transform.position, Quaternion.identity);
 
-        if (health <= 0f) {
-            IsDead = true;
-            StopAllCoroutines(); // 取消所有還在跑的行為(跳躍/大狗叫等),死亡當下立刻打斷,不會播完手上的動作再結束
+        if (health <= 0f) Die();
+    }
 
-            if (animator != null) {
-                animator.SetBool("isDeath", true);
-                animator.SetTrigger("KB");
-            }
+    // 死亡表現(動畫/淡出/停止行為),從 TakeDamage 抽出來,讓覆寫 TakeDamage 的子類別(例如共用血量池見底時)也能呼叫同一套流程。
+    protected virtual void Die() {
+        IsDead = true;
+        StopAllCoroutines(); // 取消所有還在跑的行為(跳躍/大狗叫等),死亡當下立刻打斷,不會播完手上的動作再結束
 
-            StartCoroutine(DeathFadeRoutine());
+        if (animator != null) {
+            animator.SetBool("isDeath", true);
+            animator.SetTrigger("KB");
         }
+
+        StartCoroutine(DeathFadeRoutine());
+    }
+
+    // 由外部(例如共用血量池的隊友)直接宣告陣亡,跳過一般扣血流程,沿用同一套死亡表現;已死亡時不重複觸發。
+    public void ForceDie() {
+        if (!IsDead) Die();
     }
 
     // 死亡 DeathFadeDelay 秒後,花 DeathFadeDuration 秒把 sprite 淡出隱藏,隱藏開始時播放死亡音效

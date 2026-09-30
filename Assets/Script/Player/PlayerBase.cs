@@ -49,6 +49,10 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
     // 之後如果有自殘系角色主動對自己傳 fromEnemyAttack: false 扣血,不會誤判成「被打中」。
     public bool TookEnemyDamageThisRun { get; private set; }
 
+    // 是否會被敵方爆擊直接秒殺(見 EnemyCritRoll):預設 false,目前沒有任何角色符合,是給未來角色(例如企劃中的「鋼鐵超人貓」)
+    // 預留的擴充點,這個角色本身尚未實作,先不要在這裡假設任何具體行為。
+    public virtual bool IsInstaKillableByCrit => false;
+
     // 終結技衝撞過程中免疫擊退(見 Q15:免傷時不該還會被打飛)
     protected virtual bool CanBeKnockedBack => !ultimateSkill.IsActive;
     // 是否免傷:預設跟 CanBeKnockedBack 綁在一起(貓咪超人的大招衝撞免控也免傷),
@@ -106,6 +110,8 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
 
         debuffState.Tick(Time.fixedDeltaTime);
         ApplyDebuffCooldownEffects();
+        // 暈眩時動畫暫停播放;死亡後不套用,避免死亡當下還在暈眩中時,死亡動畫被卡在 speed=0 直到暈眩計時器跑完
+        animator.speed = (!IsDead && IsStunned) ? 0f : 1f;
 
         bool skillControllingMovement = dashSkill.IsActive || ultimateSkill.IsActive;
         if (!skillControllingMovement && !IsKnockedBack && !IsStunned) {

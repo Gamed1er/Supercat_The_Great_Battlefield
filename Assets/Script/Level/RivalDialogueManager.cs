@@ -49,8 +49,9 @@ public class RivalDialogueManager : MonoBehaviour {
 
         if (difficulty > progress.highestDifficultyCleared) progress.highestDifficultyCleared = difficulty;
 
-        if (progress.bestClearTimeSeconds < 0f || clearTimeSeconds < progress.bestClearTimeSeconds) {
-            progress.bestClearTimeSeconds = Mathf.Round(clearTimeSeconds * 100f) / 100f; // 0.01 秒精度
+        float[] bestTimes = progress.GetOrInitBestClearTimes();
+        if (bestTimes[difficulty] < 0f || clearTimeSeconds < bestTimes[difficulty]) {
+            bestTimes[difficulty] = Mathf.Round(clearTimeSeconds * 100f) / 100f; // 0.01 秒精度
         }
 
         if (difficulty >= EnemyBase.MaxDifficulty && noDamageThisRun && !progress.hasAchievedNoDamageMaxDifficulty) {
