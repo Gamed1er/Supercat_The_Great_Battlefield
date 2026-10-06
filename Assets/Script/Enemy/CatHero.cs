@@ -43,7 +43,9 @@ public class CatHero : EnemyBase {
     [Header("墜地拳 (比照 JurassicCat 泰山隕石墜:往上飛出 -> 隱藏 -> 柱狀警示 -> 從地圖頂端垂直下墜穿出畫面底部 -> 飛回施放前的位置)")]
     public float vanishLaunchHeight = 4f;
     public float vanishLaunchSpeed = 15f;
-    public float warningDuration = 1f;
+    // 警示持續時間:難度 0 / 難度 5 的秒數,中間難度用等差數列內插(見 ApplyDifficulty,比照 DogeEnemy 出招冷卻的做法)
+    public float warningDurationDifficulty0 = 1.5f;
+    public float warningDurationDifficulty5 = 0.8f;
     public float warningTrackDuration = 0.6f; // 警示前這麼多秒追蹤玩家 x,之後鎖定不動
     public float warningFollowSpeed = 4f; // 刻意比玩家移動速度慢,才閃得掉
     public float warningColumnWidth = 1.4f;
@@ -111,6 +113,7 @@ public class CatHero : EnemyBase {
     bool hasEnteredPhase2;
     float idleTimer;
     float phase2Timer;
+    float warningDuration; // 由 ApplyDifficulty 依難度算出,不直接在 Inspector 調整
     float idleBobTime;
     float shield;
     float shieldMax;
@@ -131,6 +134,7 @@ public class CatHero : EnemyBase {
     public override void ApplyDifficulty(int difficulty) {
         base.ApplyDifficulty(difficulty);
         this.difficulty = Mathf.Clamp(difficulty, 0, MaxDifficulty);
+        warningDuration = Mathf.Lerp(warningDurationDifficulty0, warningDurationDifficulty5, this.difficulty / (float)MaxDifficulty);
     }
 
     // 1-3 是無重力關卡,沒有地板,這裡只用來拿整張地圖的範圍:地圖以 world (0,0) 置中(見 LevelManager),

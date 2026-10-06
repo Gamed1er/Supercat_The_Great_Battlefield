@@ -7,7 +7,7 @@ using UnityEngine;
 // 追蹤 5 秒內沒命中就放棄追蹤,之後維持當下方向直線飛完剩餘壽命(見 Bullet.cs 的 homingTarget/homingDuration)。
 // 不佔用移動鎖(見 IsActive 恆為 false),旋轉期間的忙碌狀態改由 IsSpinning 對外查詢。
 public class RadialBurstSkill : ISkill {
-    const int bulletCount = 20;
+    const int bulletCount = 10;
     const float spinDuration = 0.2f; // 觸發後角色順時針轉一圈所需時間,子彈依序在轉到對應角度時發射
     const float bulletSpeedMultiplier = 1f; // 普攻子彈速度的 50%
     const float homingTurnRateDegrees = 0f; // 貓咪超人大招(ChargeRamSkill.homingTurnRateDegrees)的倍數,即「中幅度追蹤」

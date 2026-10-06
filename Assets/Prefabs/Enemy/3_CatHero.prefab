@@ -172,7 +172,9 @@ MonoBehaviour:
   placeholderColor: {r: 0.9, g: 0.75, b: 0.2, a: 1}
   shootSfxName: shoot
   fallPunchSfxName: shaking2
+  fallSfxLeadTime: 0.2
   explosionSfxName: shaking
+  shieldHitSfxName: hurt_shield
   idleIntervalBase: 3
   idleIntervalPerDifficulty: 0.4
   idleBobAmplitude: 0.25
@@ -184,13 +186,16 @@ MonoBehaviour:
   bulletPrefab: {fileID: 5000001, guid: 7c6c26c21bea45b8ad40f41179e96fc9, type: 3}
   lightBulletCount: 10
   lightBulletInterval: 0.1
+  lightBulletRecoilDistance: 0.12
+  lightBulletRecoilDuration: 0.08
   bulletSpeed: 10
   bulletDamagePercent: 0.4
   vanishLaunchHeight: 4
   vanishLaunchSpeed: 15
-  warningDuration: 1
+  warningDurationDifficulty0: 1.5
+  warningDurationDifficulty5: 0.8
   warningTrackDuration: 0.6
-  warningFollowSpeed: 1
+  warningFollowSpeed: 5
   warningColumnWidth: 4.5
   warningColumnPrefab: {fileID: 0}
   fallSpeed: 30
@@ -205,22 +210,22 @@ MonoBehaviour:
   explosionEffectPrefab: {fileID: 0}
   phase2HealthPercent: 0.6
   superShotgunInterval: 30
-  shieldPercent: 0.1
+  shieldPercent: 0.2
   shotgunBulletsPerRound: 3
-  shotgunBulletsPerRoundMaxDifficulty: 3
+  shotgunBulletsPerRoundMaxDifficulty: 4
   shotgunStartInterval: 0.3
   shotgunIntervalDecrement: 0.01
-  shotgunMinInterval: 0.1
+  shotgunMinInterval: 0.15
   shieldBreakStunDuration: 5
   rockPrefab: {fileID: 1300000105, guid: 541fd963db174190a3c0f07c97de0848, type: 3}
-  rockFirstDelay: 10
-  rockIntervalMin: 5
+  rockFirstDelay: 5
+  rockIntervalMin: 3
   rockIntervalMaxBase: 15
   rockIntervalMaxPerDifficulty: 2
   rockCountMin: 2
-  rockCountMax: 3
-  rockSpeed: 6
-  rockAngleJitterDegrees: 10
+  rockCountMax: 5
+  rockSpeed: 8
+  rockAngleJitterDegrees: 30
   ufoPrefab: {fileID: 1300000205, guid: 9425eba4dddb484a8e2d0deb4214eef7, type: 3}
   ufoFirstDelay: 15
   ufoIntervalMin: 10

@@ -25,5 +25,5 @@ MonoBehaviour:
   enemyPool:
   - enemyPrefab: {fileID: 1300000000, guid: 0631592311424c9b9fd33f9682611acb, type: 3}
     spawnPosition: {x: 6, y: 0}
-  bgmName: normal_battle
-  backgroundTilePrefab: {fileID: 1594757997138783139, guid: 7a6d2710a928ba64886a58147d3bef63, type: 3}
+  bgmName: universe
+  backgroundTilePrefab: {fileID: 1594757997138783139, guid: 01713a5abf4760b40ad8e1e5ba146b2d, type: 3}
