@@ -57,6 +57,8 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
     // 給 UI 血條(怪池總血量加總)讀取用
     public float MaxHealth => maxHealth;
     public float HealthRatio => maxHealth > 0f ? Mathf.Clamp01(health / maxHealth) : 0f;
+    // 目前護盾量(給 UI 護盾條加總用),沒有護盾機制的敵人固定是 0;有護盾的子類別(例如 CatHero)覆寫
+    public virtual float Shield => 0f;
 
     protected virtual void Awake() {
         rb = GetComponent<Rigidbody2D>();
@@ -110,6 +112,9 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
 
     // 目前是否可以被打斷,子類別可覆寫(例如正在放不可打斷的大招時回傳 false)
     protected virtual bool CanBeKnockedBack => true;
+
+    // 死亡淡出時是否播放死亡音效;大量生成/頻繁死亡的召喚物(例如貓俠的滾石)覆寫成 false,避免音效洗版
+    protected virtual bool PlaysDeathSfx => true;
 
     // 觸發被打斷+擊退:播放 KB 動畫,套用位移,進入硬直。回傳是否成功觸發(已死亡/已在硬直中/當下不可被打斷都會失敗)。
     // 硬直時間固定用自己的 knockbackDuration,不受攻擊方指定;distance 給 0 時只有硬直沒有位移。
@@ -185,7 +190,7 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
     IEnumerator DeathFadeRoutine() {
         yield return new WaitForSeconds(DeathFadeDelay);
 
-        AudioManager.Instance.PlaySFX("death");
+        if (PlaysDeathSfx) AudioManager.Instance.PlaySFX("death");
 
         if (!TryGetComponent(out SpriteRenderer spriteRenderer)) yield break;
 

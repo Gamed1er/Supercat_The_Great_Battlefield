@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62c53428937f2b54b858c28509f2714d, type: 3}
+  m_Name: 1-3
+  m_EditorClassIdentifier: 
+  levelId: 1-3
+  levelName: "\u8C93\u4FE0\u5927\u5E1D"
+  preBattleStoryScript: {fileID: 0}
+  rivalDialogueScript: {fileID: 0}
+  rivalCharacterId: 
+  rivalPortraitExpression: normal
+  mapWidthMultiplier: 1
+  mapHeightMultiplier: 1
+  groundHeightPercent: 0
+  playerSpawnPosition: {x: -6, y: 0}
+  enemyPool:
+  - enemyPrefab: {fileID: 1300000000, guid: 0631592311424c9b9fd33f9682611acb, type: 3}
+    spawnPosition: {x: 6, y: 0}
+  bgmName: normal_battle
+  backgroundTilePrefab: {fileID: 1594757997138783139, guid: 7a6d2710a928ba64886a58147d3bef63, type: 3}

@@ -7,6 +7,8 @@ public class UIManager : MonoBehaviour {
     static readonly Color HealthHighColor = ParseColor("C0FF93");
     static readonly Color HealthMidColor = ParseColor("FFE456");
     static readonly Color HealthLowColor = ParseColor("F33D4A");
+    static readonly Color ShieldNormalColor = ParseColor("86E6FF");
+    static readonly Color ShieldHitColor = ParseColor("FFD1B2");
 
     [Header("Heart")]
     public Image heartFillImage; // Fill Amount = 血量比例,顏色依比例變化
@@ -22,6 +24,9 @@ public class UIManager : MonoBehaviour {
     public Image S2_FillImage; // IconMask,Fill Amount = 充能比例,同一張圖示疊在 S2_IconImage 上方
     public Text S2_Text; // 充能 n / m
 
+    [Header("出戰角色 (技能槽左上方)")]
+    public Image characterPortraitImage; // 固定顯示目前出戰角色的靜態圖(PlayerBase.Portrait),戰鬥中不會變
+
     [Header("Enemy")]
     public Image enemyFillImage; // Fill Amount = 血量比例,1 滿血 / 0 死亡,扣血時立刻更新,不延遲
     public Image enemyWhiteFillImage; // 疊在 enemyFillImage 下方的延遲血條,扣血時慢半拍才追上,做出扣血的視覺延遲感
@@ -29,6 +34,11 @@ public class UIManager : MonoBehaviour {
     public Text enemyHealthText; // 血量百分比,n% (無條件進位)
     [SerializeField] float enemyWhiteDelay = 0.2f; // 血量下降後,白條要等這麼久才開始追
     [SerializeField] float enemyWhiteDrainDuration = 0.25f; // 白條追上紅條(平滑 Lerp)花的時間
+    // 護盾條:Fill Amount = 護盾量 / 血量上限(超過上限固定 1),沒有白色延遲條,
+    // 護盾減少時改成受擊色,維持 enemyWhiteDelay + enemyWhiteDrainDuration 秒(跟血條白條追上的時間一樣)後改回原色
+    public Image enemyShieldFillImage;
+
+    [SerializeField] float enemyShieldDrainDuration = 0.2f; // 護盾變色 (平滑 Lerp)花的時間
 
     enum EnemyWhiteBarState { Idle, Waiting, Draining }
 
@@ -41,6 +51,9 @@ public class UIManager : MonoBehaviour {
     float enemyWhiteTimer; // Waiting 時倒數延遲、Draining 時累計經過時間,兩種狀態共用同一個計時器
     float enemyWhiteDrainFrom; // Draining 起點(白條被打斷當下的位置)
     float enemyWhiteDrainTo; // Draining 終點(最新的血量比例)
+
+    float shieldLastRatio; // 上一次看到的護盾比例,用來偵測護盾減少
+    float shieldHitColorTimer; // > 0 時護盾條顯示受擊色,每次護盾減少都重新計時
 
     // 用 Start() 而不是 Awake():LevelManager 是在自己的 Awake() 裡動態生成玩家/敵人,
     // 不同物件的 Awake 執行順序不保證,但 Unity 保證所有物件的 Awake 都跑完後才會進到任何一個 Start()
@@ -80,6 +93,7 @@ public class UIManager : MonoBehaviour {
             if (S2_IconImage != null) S2_IconImage.sprite = player.S2_Icon;
             if (S2_FillImage != null) S2_FillImage.sprite = player.S2_Icon;
         }
+        if (player.Portrait != null) characterPortraitImage.sprite = player.Portrait;
     }
 
     void UpdateHeart() {
@@ -119,6 +133,19 @@ public class UIManager : MonoBehaviour {
         if (enemyHealthText != null) enemyHealthText.text = $"{Mathf.CeilToInt(ratio * 100f)}%";
 
         UpdateEnemyWhiteBar(ratio);
+        UpdateEnemyShieldBar();
+    }
+
+    void UpdateEnemyShieldBar() {
+        float ratio = levelManager.EnemyGroupShieldRatio;
+
+        if (ratio < shieldLastRatio) shieldHitColorTimer = enemyShieldDrainDuration;
+        shieldLastRatio = ratio;
+
+        if (shieldHitColorTimer > 0f) shieldHitColorTimer -= Time.deltaTime;
+
+        enemyShieldFillImage.fillAmount = ratio;
+        enemyShieldFillImage.color = shieldHitColorTimer > 0f ? ShieldHitColor : ShieldNormalColor;
     }
 
     // enemyWhiteFillImage 疊在 enemyFillImage 下面:紅條扣血瞬間更新,白條慢半拍才追上,做出扣血的視覺延遲感。

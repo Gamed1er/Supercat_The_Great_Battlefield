@@ -47,6 +47,21 @@ public class LevelManager : MonoBehaviour {
         }
     }
 
+    // 怪池目前總護盾量 / 關卡開始時的總血量:護盾條以「血量上限」為基準顯示(例如上限 500、護盾 150 → 0.3),
+    // 跟血條共用同一個分母,超過血量上限時固定顯示 1
+    public float EnemyGroupShieldRatio {
+        get {
+            if (totalStartingHealth <= 0f) return 0f;
+
+            float shieldTotal = 0f;
+            foreach (EnemyBase enemy in enemies) {
+                if (!enemy.IsDead) shieldTotal += Mathf.Max(0f, enemy.Shield);
+            }
+
+            return Mathf.Clamp01(shieldTotal / totalStartingHealth);
+        }
+    }
+
     void Awake() {
         Instance = this;
         battleStartTime = Time.time;
