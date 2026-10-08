@@ -96,11 +96,15 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
     // 重複呼叫會拿上一次算出的結果當底數疊乘。
     // 子類別可覆寫並在呼叫 base.ApplyDifficulty 後,再疊加自己專屬的難度參數(例如攻擊週期、位移速度)。
     public virtual void ApplyDifficulty(int difficulty) {
+        health = ScaleForDifficulty(health, healthMultiplier, difficulty);
+        baseAttack = ScaleForDifficulty(baseAttack, attackMultiplier, difficulty);
+    }
+
+    // 難度倍率公式本體:不需要生成敵人就能算,測試大廳的敵人資訊面板直接拿 prefab 上的難度 0 數值套這個預覽
+    public static float ScaleForDifficulty(float difficulty0Value, float multiplier, int difficulty) {
         difficulty = Mathf.Clamp(difficulty, 0, MaxDifficulty);
         int exponent = difficulty == MaxDifficulty ? difficulty + 1 : difficulty;
-
-        health *= Mathf.Pow(healthMultiplier, exponent);
-        baseAttack *= Mathf.Pow(attackMultiplier, exponent);
+        return difficulty0Value * Mathf.Pow(multiplier, exponent);
     }
 
     // 地面系敵人的遊走/追擊範圍,由 LevelManager 依 LevelData 算好後,在生成敵人後立刻呼叫(必須早於 Start)。

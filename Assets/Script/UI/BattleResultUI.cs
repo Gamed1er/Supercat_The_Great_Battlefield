@@ -323,9 +323,7 @@ public class BattleResultUI : MonoBehaviour {
 
     void OnReturnToLobby() {
         AudioManager.Instance.PlaySFX(buttonClickSfx);
-
-        // 大廳場景還沒做,先印出來確認流程有跑到這一步
-        Debug.Log("回大廳(大廳場景尚未製作)");
+        GameFlow.ReturnToLobby();
     }
 
     RectTransform CanvasRect() {

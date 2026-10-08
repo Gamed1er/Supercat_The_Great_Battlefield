@@ -2,17 +2,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 // Story.unity 的場景入口:依序播放 LevelData.preBattleStoryScript 解析出的 StoryStep,
 // 驅動場景裡手動接好的 UI(背景/左右立繪/底部對話框/中間強調文字),播完或按 Skip 後直接進 Battle 場景。
-// levelData 目前是 Inspector 手動接一筆固定值(比照 LevelManager.difficulty 的暫時做法),之後選關介面做好再換成動態傳入。
+// 從大廳進來時關卡取自 GameFlow.CurrentBattle;直接開 Story.unity 測試時才用 Inspector 上的 levelData。
 public class StoryManager : MonoBehaviour {
     // public:RivalDialogueManager 也要用同一個 key 判斷「玩家是不是第一次進這關」,見該檔案的 Start()
     public const string SeenKeyPrefix = "Story_Seen_";
 
-    [Header("關卡資料 (暫時手動指定,之後由選關畫面傳入)")]
+    [Header("關卡資料 (直接開本場景測試用;從大廳進來會被 GameFlow.CurrentBattle 覆蓋)")]
     [SerializeField] LevelData levelData;
 
     [Header("背景")]
@@ -68,6 +67,8 @@ public class StoryManager : MonoBehaviour {
     Coroutine autoAdvanceRoutine;
 
     void Awake() {
+        if (GameFlow.CurrentBattle != null) levelData = GameFlow.CurrentBattle.Level;
+
         string scriptText = levelData != null && levelData.preBattleStoryScript != null ? levelData.preBattleStoryScript.text : "";
         steps = StoryScriptParser.Parse(scriptText);
     }
@@ -153,7 +154,7 @@ public class StoryManager : MonoBehaviour {
             PlayerPrefs.SetInt(SeenKeyPrefix + levelData.levelId, 1);
             PlayerPrefs.Save();
         }
-        SceneManager.LoadScene("Battle");
+        GameFlow.EnterBattle();
     }
 
     void ApplyBackground(string name) {

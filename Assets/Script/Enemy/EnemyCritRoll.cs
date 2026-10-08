@@ -8,14 +8,15 @@ public static class EnemyCritRoll {
     static readonly float[] chanceByDifficulty = { 0.02f, 0.06f, 0.12f, 0.20f, 0.33f, 1f };
 
     const float CritMultiplier = 2f;
+
+    public static float ChanceAt(int difficulty) => chanceByDifficulty[Mathf.Clamp(difficulty, 0, chanceByDifficulty.Length - 1)];
     const float InstaKillDamage = 999999f; // 秒殺用的超大傷害量,實際扣血由 PlayerBase.TakeDamage 自己的免傷/血量夾範圍處理
 
     // target 是這次攻擊命中的玩家角色(這兩隻敵人的攻擊本來就只打玩家,不透過 IDamageable 介面查詢)。
     // 只負責算傷害數字跟是否爆擊,不在這裡播音效——子彈類攻擊(例如拍照)發射當下還不知道會不會真的命中,
     // 呼叫端要等實際命中玩家的那一刻,isCrit 為 true 才呼叫下面的 PlayCritHitSfx(),見 PhotoCat.PhotoRoutine 的用法。
     public static float ComputeDamage(float baseDamage, int difficulty, PlayerBase target, out bool isCrit) {
-        float chance = chanceByDifficulty[Mathf.Clamp(difficulty, 0, chanceByDifficulty.Length - 1)];
-        isCrit = Random.value < chance;
+        isCrit = Random.value < ChanceAt(difficulty);
         if (!isCrit) return baseDamage;
 
         if (target != null && target.IsInstaKillableByCrit) return InstaKillDamage;

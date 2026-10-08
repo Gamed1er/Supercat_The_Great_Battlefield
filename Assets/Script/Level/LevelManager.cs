@@ -6,9 +6,10 @@ using UnityEngine;
 public class LevelManager : MonoBehaviour {
     const float BackgroundZ = 10f; // 攝影機在 z=-10 朝 +z 看,背景放在比玩家/敵人(z=0)更遠的 z 才不會擋到他們
 
+    [Header("關卡/難度/角色 (直接開 Battle.unity 按 Play 時的測試值;從大廳進來會被 GameFlow.CurrentBattle 覆蓋)")]
     [SerializeField] LevelData levelData;
 
-    [Header("難度 (暫時手動指定,之後由選關/選難度畫面傳入;連續值 0~5,越大越難)")]
+    // 連續值 0~5,越大越難
     [SerializeField, Range(0, EnemyBase.MaxDifficulty)] int difficulty = 2;
 
     [SerializeField] GameObject playerPrefab;
@@ -64,6 +65,7 @@ public class LevelManager : MonoBehaviour {
 
     void Awake() {
         Instance = this;
+        ApplyBattleSelection();
         battleStartTime = Time.time;
 
         // 「1 倍率單位 = 1 個螢幕大小」:半寬高直接從攝影機當下的 orthographicSize/aspect 算,
@@ -79,6 +81,16 @@ public class LevelManager : MonoBehaviour {
 
         SpawnEnemyPool(halfExtent);
         SetupCamera(playerObj.transform, halfExtent);
+    }
+
+    // 從大廳出戰時改用大廳選的關卡/角色/難度;直接開本場景測試時 CurrentBattle 是 null,沿用 Inspector 的值
+    void ApplyBattleSelection() {
+        BattleSelection selection = GameFlow.CurrentBattle;
+        if (selection == null) return;
+
+        levelData = selection.Level;
+        playerPrefab = selection.PlayerPrefab;
+        difficulty = selection.Difficulty;
     }
 
     static Vector2 GetBaseHalfExtent() {
