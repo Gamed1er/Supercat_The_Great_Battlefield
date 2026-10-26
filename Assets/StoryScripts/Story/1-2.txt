@@ -1,0 +1,42 @@
+#bg 2
+#bgm normal_battle
+
+#speak none
+跟狗仔道別後
+超人貓又開始了他的冒險
+然而才剛出發沒多久
+前方似乎傳來了打架的聲音
+
+#enter left PhotoCat idle
+#enter right JurassicCat idle
+
+#speak left
+就說了只要帶上聯組，我也能好好打爆擊的啊！
+
+#speak right
+還不是因為 +80 的關係，你沒有 +80 的話，哪能夠打爆擊啊？
+
+#speak left
+我又沒有 +80 ，是誰亂說我 +80 的？
+
+#exit left
+#enter left SuperCat idle
+
+#speak left
+不要再打了！打架 bad
+
+#speak right
+這是...超人貓？
+連爆擊都不會的傢伙給我閉嘴，這裡不關你的事
+
+#speak left
+爆擊？為什麼會提到爆擊？
+
+#speak right
+就說了不關你的事，再吵我就連你也打
+
+#speak left
+無法溝通啊...看來只能以暴制暴了呢
+
+#exit right
+#exit left

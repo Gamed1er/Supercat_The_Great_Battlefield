@@ -1,16 +1,20 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 // 子彈分類:一般(可被破壞性摧毀)/破壞性(會摧毀撞到的非免疫子彈,兩顆破壞性互相摧毀)/免疫破壞(不受破壞性影響,也不會主動摧毀任何子彈)
 public enum BulletType { Normal, Destructive, Immune }
 
-// 直線飛向發射當下鎖定位置的子彈:命中 targetTag 造成傷害,命中 Wall 直接消失,子彈之間依 BulletType 規則互相影響
+// 直線飛向發射當下鎖定位置的子彈:命中 targetTag 造成傷害,命中 Wall 直接消失,子彈之間依 BulletType 規則互相影響。
+// pierce 的子彈命中目標後不消失,繼續飛(同一個目標只打一次)。碰撞體不限形狀(圓形/長方形都可以)
 [RequireComponent(typeof(Rigidbody2D))]
-[RequireComponent(typeof(CircleCollider2D))]
+[RequireComponent(typeof(Collider2D))]
 [RequireComponent(typeof(SpriteRenderer))]
 public class Bullet : MonoBehaviour {
     public const float defaultSpeed = 20f; // public 供其他技能算相對速度用(例如赤井大招的追蹤彈是這個速度的一半)
     const float defaultLifeTime = 3f;
+
+    [SerializeField] bool alignToDirection; // 有方向性的外型(例如長條)勾這個,物件 x 軸會轉向飛行方向;圓形子彈不需要
 
     float damage;
     Vector2 direction;
@@ -20,6 +24,8 @@ public class Bullet : MonoBehaviour {
     BulletType bulletType;
     Action onHit; // 命中目標或摧毀敵方子彈時呼叫,給發射端(技能)掛自訂效果用,預設不掛(null)
     bool destroyed;
+    bool pierce;
+    readonly HashSet<Collider2D> piercedTargets = new HashSet<Collider2D>(); // pierce 用:已經打過的目標,避免重複傷害
 
     // 追蹤用(選用):homingTarget 非 null 時,飛行方向每個 FixedUpdate 依 homingTurnRateDegrees 朝目標修正,
     // 超過 homingDuration 秒未命中就放棄追蹤(homingTarget 設回 null),之後維持當下方向直線飛行
@@ -42,7 +48,8 @@ public class Bullet : MonoBehaviour {
             float lifeTime = defaultLifeTime,
             Transform homingTarget = null,
             float homingTurnRateDegrees = 0f,
-            float homingDuration = 0f
+            float homingDuration = 0f,
+            bool pierce = false
         ) 
     {
         GameObject go = prefab != null
@@ -60,6 +67,8 @@ public class Bullet : MonoBehaviour {
         bullet.homingTarget = homingTarget;
         bullet.homingTurnRateDegrees = homingTurnRateDegrees;
         bullet.homingDuration = homingDuration;
+        bullet.pierce = pierce;
+        bullet.AlignToDirection();
 
         Destroy(go, lifeTime);
     }
@@ -97,7 +106,13 @@ public class Bullet : MonoBehaviour {
             }
         }
 
+        AlignToDirection();
         transform.Translate(direction * speed * Time.fixedDeltaTime, Space.World);
+    }
+
+    void AlignToDirection() {
+        if (!alignToDirection) return;
+        transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg);
     }
 
     void OnTriggerEnter2D(Collider2D other) {
@@ -109,12 +124,13 @@ public class Bullet : MonoBehaviour {
         }
 
         if (other.CompareTag(targetTag)) {
+            if (pierce && !piercedTargets.Add(other)) return;
             if (other.TryGetComponent(out IDamageable target)) {
                 target.TakeDamage(damage);
                 if (owner is PlayerBase player) player.stats.AddCharge(1f); // 普通攻擊命中 +1 充能,玩家專屬
                 onHit?.Invoke();
             }
-            DestroySelf();
+            if (!pierce) DestroySelf();
         } else if (other.CompareTag("Wall")) {
             DestroySelf();
         }

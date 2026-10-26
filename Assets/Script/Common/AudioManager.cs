@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -34,6 +35,7 @@ public class AudioManager : MonoBehaviour {
 
     AudioSource bgmSource;
     AudioSource sfxSource;
+    Coroutine bgmFade; // FadeOutBGM 進行中的協程,PlayBGM/StopBGM 會中斷它並把音量復原
 
     readonly Dictionary<string, AudioClip> sfxCache = new Dictionary<string, AudioClip>();
     readonly Dictionary<string, AudioClip> bgmCache = new Dictionary<string, AudioClip>();
@@ -65,6 +67,7 @@ public class AudioManager : MonoBehaviour {
     // 播放 BGM,同一首正在播放時不會重新播放。loop 預設為 true
     public void PlayBGM(AudioClip clip, bool loop = true) {
         if (clip == null) return;
+        CancelBgmFade();
         if (bgmSource.isPlaying && bgmSource.clip == clip) return;
 
         bgmSource.clip = clip;
@@ -73,8 +76,35 @@ public class AudioManager : MonoBehaviour {
     }
 
     public void StopBGM() {
+        CancelBgmFade();
         bgmSource.Stop();
         bgmSource.clip = null;
+    }
+
+    // 在 duration 秒內把 BGM 音量降到 0,降完直接 StopBGM(之後 PlayBGM 同一首也會從頭重播)並把音量復原成玩家設定值。
+    // 用不受 Time.timeScale 影響的時間:轉場可能在暫停(timeScale = 0)狀態下觸發,見 ScreenFader
+    public void FadeOutBGM(float duration) {
+        if (!bgmSource.isPlaying) return;
+        CancelBgmFade();
+        bgmFade = StartCoroutine(FadeOutBgmRoutine(duration));
+    }
+
+    IEnumerator FadeOutBgmRoutine(float duration) {
+        float startVolume = bgmSource.volume;
+        for (float t = 0f; t < duration; t += Time.unscaledDeltaTime) {
+            bgmSource.volume = Mathf.Lerp(startVolume, 0f, t / duration);
+            yield return null;
+        }
+        bgmFade = null;
+        StopBGM();
+    }
+
+    void CancelBgmFade() {
+        if (bgmFade != null) {
+            StopCoroutine(bgmFade);
+            bgmFade = null;
+        }
+        ApplyBgmVolume();
     }
 
     public void PauseBGM() => bgmSource.Pause();
@@ -87,6 +117,12 @@ public class AudioManager : MonoBehaviour {
     public void PlaySFX(AudioClip clip, float volumeScale = 1f) {
         if (clip == null) return;
         sfxSource.PlayOneShot(clip, MasterVolume * SfxVolume * volumeScale);
+    }
+
+    // 音效長度(秒),給需要「等音效播完再做下一步」的呼叫端用;找不到檔案時回傳 0
+    public float GetSFXLength(string clipName) {
+        AudioClip clip = LoadClip(sfxCache, "Audio/SFX", clipName);
+        return clip != null ? clip.length : 0f;
     }
 
     // 受傷音效:玩家/敵人共用,隨機播放 hurt1 或 hurt2

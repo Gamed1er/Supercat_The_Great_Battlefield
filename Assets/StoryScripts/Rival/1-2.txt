@@ -1,0 +1,71 @@
+// 對手短台詞:侏儸貓 & 攝影師貓(超人貓 vs 1-2)
+// 這份檔案要指定給 LevelData.rivalDialogueScript;開場長篇劇情在 StoryScripts/Story/1-2.txt。
+//
+// 注意:短台詞系統只有一個固定頭像/名字(LevelData.rivalCharacterId = JurassicCat),
+// 所以不是侏儸貓講的台詞,先在句首用「攝影師貓：」「超人貓：」標出說話者。
+// 區塊 id 對應關係見 RivalDialogueSelector.cs:
+//   戰前開場白: challenge_max > challenge_after_loss > challenge_again
+//   戰後結果(贏): victory_max_no_damage > victory_max > victory_7th > victory_first > victory_again
+//   戰後結果(輸): defeat_max > defeat_after_win > defeat
+//
+// 原稿中目前系統還不支援、先保留在註解的部分:
+//   - 「再次通關」「已通關再次挑戰卻戰敗」的二選一隨機台詞(現在只能固定一句)
+//   - 通關80場任意難度後隱藏劇情:超人貓：我也感受到了 +80 的力量...
+
+#section challenge_again
+超人貓：你們怎麼又在打架了啊？
+沒有啦，這次只是在打練習賽而已
+你也要加入嗎？
+超人貓：當然好啊！
+
+#section challenge_after_loss
+還不死心啊，要不乾脆先去學一下爆擊？
+
+#section challenge_max
+攝影師貓：我已經 +80 了，小心我的爆擊喔
+
+#section victory_first
+你這傢伙明明不會爆擊，倒也挺強的嘛
+超人貓：那當然，我本來就很強啊
+超人貓：所以你們願意好好講講發生了什麼事嗎？
+攝影師貓：他一直說什麼我要 +80 才能打爆擊之類的話
+攝影師貓：為了證明我不用 +80 也能打爆擊，我們就開始打起來了
+我就是這樣聽說的啊，事實上剛剛也是我打了比較多爆擊吧
+超人貓：等等，那是聽誰說的呢？
+嗯...我忘了，只記得好像是個黑黑的傢伙
+超人貓：黑黑的傢伙？我之後多加留意好了
+超人貓：總之你們別再打了，再打下去也不會有什麼好處
+攝影師貓：好啦，只要他願意相信我不用 +80 也能打爆擊就好
+但是你的爆擊率明明就...
+超人貓：好了啦，幹嘛這麼執著在爆擊率呢
+超人貓：每隻貓有各自的專長啊，又不是只有能打爆擊的才是好貓
+超人貓：看看我，雖然不會爆擊，但不也很強嗎？
+確實也是呢
+超人貓：我會去幫你們調查到底是誰這樣亂講的
+超人貓：你們願意就此停手，不再吵架了嗎？
+攝影師貓：也是可以考慮啦
+超人貓：那我這就出發啦，後會有期
+
+// 原稿二選一的另一句「攝影師貓：要不要來拍一張大合照？」移到 victory_7th
+#section victory_again
+你又變強了呢，該不會偷偷學會了爆擊？
+
+// 原稿沒有第7勝台詞,先借用「再次通關」的另一句
+#section victory_7th
+攝影師貓：要不要來拍一張大合照？
+
+#section victory_max
+攝影師貓：竟然能戰勝 +80 的我，還真是不簡單
+
+#section victory_max_no_damage
+攝影師貓：難道你也 +80 ？
+
+#section defeat
+不會爆擊的傢伙就滾一邊去吧
+
+// 原稿二選一的另一句:攝影師貓：肚子餓了嗎？要不要先去吃一些芒果？
+#section defeat_after_win
+果然還是有爆擊更好吧
+
+#section defeat_max
+攝影師貓：現在知道 +80 有多可怕了吧

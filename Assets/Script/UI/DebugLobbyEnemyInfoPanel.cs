@@ -6,7 +6,7 @@ using UnityEngine.UI;
 // 測試大廳專用:依目前選的難度,列出每個關卡出怪池裡敵人的血量/基本攻擊力/技能,方便調數值時對照。
 // 血量/攻擊力直接讀 prefab 上的難度 0 數值 + 倍率,套 EnemyBase.ScaleForDifficulty 算出(跟實際進場時同一條公式,改 prefab 會自動跟上);
 // 技能說明與傷害倍率則是照各敵人腳本/prefab 目前的設定寫死在下面的表裡——正式版不會用到這個面板,改了敵人設計記得手動同步。
-public class LobbyEnemyInfoPanel : MonoBehaviour {
+public class DebugLobbyEnemyInfoPanel : MonoBehaviour {
     [SerializeField] Text infoText;
 
     // damagePercent:傷害 = 基本攻擊力 × 這個倍率;null 表示不是傷害技能(被動/機制說明)
@@ -37,7 +37,7 @@ public class LobbyEnemyInfoPanel : MonoBehaviour {
         },
         ["2_JurassicCat"] = new[] {
             new SkillInfo("槌擊", 1f, "位於玩家正下方時垂直跳起攻擊"),
-            new SkillInfo("泰山隕石墜", 2.5f, "離場蓄力,警告區域追蹤玩家 5 秒後砸落"),
+            new SkillInfo("泰山隕石墜", 2.5f, "離場後全高警示柱追蹤玩家,1.5~0.8 秒後沿柱子砸落"),
             new SkillInfo("被動", null, "與攝影貓共用一條血量;固定 66% 免傷,被暈眩時失效;攝影貓打中玩家會清空槌擊冷卻;攻擊會爆擊(2 倍)"),
         },
         ["3_CatHero"] = new[] {

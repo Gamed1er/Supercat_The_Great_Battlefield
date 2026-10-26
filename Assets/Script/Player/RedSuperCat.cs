@@ -2,8 +2,10 @@ using UnityEngine;
 
 // 赤井抄太郎:火力至上的彈幕角色,機動性較差(沒有位移技能)。
 // 普攻/戰技/大招子彈皆具破壞性且都算「普攻類型子彈」,命中敵人或摧毀敵方子彈時觸發被動,縮短戰技與大招冷卻。
+// 戰技/大招改用直線飛行、可穿透敵人的長條子彈(skillBulletPrefab),普攻維持一般子彈。
 public class RedSuperCat : PlayerBase {
     [SerializeField] GameObject bulletPrefab;
+    [SerializeField] GameObject skillBulletPrefab; // 戰技/大招用的穿透長條子彈
 
     const float passiveCooldownReduction = 0.5f; // 被動:命中時縮短戰技/大招冷卻的秒數
 
@@ -29,10 +31,10 @@ public class RedSuperCat : PlayerBase {
             onHit: OnProjectileHit, isSuppressed: () => barrageSkill.IsFiring || radialBurstSkill.IsSpinning);
 
         // 戰技/大招觸發當下都重置普攻冷卻(見 onTrigger),避免技能收尾瞬間普攻剛好同時開火而混淆畫面
-        barrageSkill = new BarrageSkill(this, bulletPrefab, damageMultiplier: 1.0f, cooldown: 4.5f,
+        barrageSkill = new BarrageSkill(this, skillBulletPrefab, damageMultiplier: 1.0f, cooldown: 4.5f,
             onProjectileHit: OnProjectileHit, onTrigger: () => normalAttackSkill.ResetCooldown());
 
-        radialBurstSkill = new RadialBurstSkill(this, bulletPrefab, damageMultiplier: 1.0f, cooldown: 20f,
+        radialBurstSkill = new RadialBurstSkill(this, skillBulletPrefab, damageMultiplier: 1.0f, cooldown: 20f,
             barrageSkillToInterrupt: barrageSkill, onProjectileHit: OnProjectileHit, onTrigger: () => normalAttackSkill.ResetCooldown());
 
         dashSkill = barrageSkill;

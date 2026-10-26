@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// 關卡出現在哪一張選關地圖:主線,或 Stage(特殊地圖/支線)
+public enum LevelMapCategory { Main, Stage }
+
 // 出怪池的一筆資料:要生成的敵人 prefab,以及它的出生位置
 [System.Serializable]
 public class EnemySpawnEntry {
@@ -18,13 +21,24 @@ public class LevelData : ScriptableObject {
     [Header("顯示 (怪池血條名稱)")]
     public string levelName = "關卡";
 
+    [Header("選關地圖 (正式大廳用;節點位置/連線由 Tools > Lobby > Build Lobby Scene 依這些欄位生成,改完要重跑)")]
+    public LevelMapCategory mapCategory = LevelMapCategory.Main;
+    public int chapter = 1; // 同一個 mapCategory 底下,每一章一頁地圖
+    public Vector2 mapPosition = new Vector2(0.5f, 0.5f); // 節點在地圖區塊內的位置,0~1 比例:(0,0) 左下、(1,1) 右上
+    public string mapTitle; // 詳細面板的標題
+    [TextArea(3, 8)] public string description; // 詳細面板的簡介
+
+    [Header("解鎖條件 (prerequisiteLevel 空的 = 一開始就解鎖;否則要用 prerequisiteMinDifficulty 以上的難度通關它)")]
+    public LevelData prerequisiteLevel;
+    [Range(0, EnemyBase.MaxDifficulty)] public int prerequisiteMinDifficulty;
+
     [Header("戰前劇情 (選填;StoryManager 讀這個播,播完/略過後直接進本關卡戰鬥;只在玩家第一次進這關時播放一次)")]
     public TextAsset preBattleStoryScript;
 
     [Header("對手短台詞 (選填;戰前開場白/戰後結果,依 RivalDialogueSelector 的規則挑選對應 #section 播放,見 RivalDialogueManager)")]
     public TextAsset rivalDialogueScript;
-    public string rivalCharacterId; // 立繪資料夾名稱,同時是對話框顯示的名稱(比照 StoryManager 的 CharacterId 慣例)
-    public string rivalPortraitExpression = "normal"; // 對應 Resources/Images/Characters/{rivalCharacterId}/{rivalPortraitExpression}
+    public string rivalCharacterId; // 對應 Resources/StoryCharacters/{rivalCharacterId}.asset(StoryCharacter),比照劇情腳本的角色 ID 慣例
+    public string rivalPortraitExpression = "normal"; // 該 StoryCharacter 的狀態名稱
 
     [Header("地圖大小 (倍率, 基準為 LevelManager.BaseHalfWidth/BaseHalfHeight)")]
     public float mapWidthMultiplier = 1f;

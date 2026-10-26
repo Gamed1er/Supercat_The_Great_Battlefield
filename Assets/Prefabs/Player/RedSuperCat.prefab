@@ -185,12 +185,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hitEffectPrefab: {fileID: 4000001, guid: 5a818eb93b5045e0a6af51105775f2eb, type: 3}
   knockbackDuration: 0.3
+  normalAttackIcon: {fileID: 0}
   s1Icon: {fileID: 21300000, guid: 56e481c936f571e42af02b41898d9cfd, type: 3}
   s2Icon: {fileID: 21300000, guid: 62b6cdfb4119edd46b780c942ce28547, type: 3}
   portrait: {fileID: 21300000, guid: 2b1713fd47b99eb4099fcb1de091838c, type: 3}
+  displayName: "\u8d64\u4e95\u6284\u592a\u90ce"
+  normalAttackDescription: "\u81ea\u52d5\u9396\u5b9a\u6700\u8fd1\u7684\u6575\u4eba\u5c04\u64ca\u3002\n\u88ab\u52d5:\u4efb\u4f55\u5b50\u5f48\u547d\u4e2d\u6575\u4eba\u6216\u64ca\u7834\u6575\u5f48\u6642,\u7e2e\u77ed\u5169\u500b\u6280\u80fd\u7684\u51b7\u537b\u3002"
+  s1Description: "\u3010\u5de6\u9375\u3011\u671d\u6ed1\u9f20\u65b9\u5411\u5c04\u51fa 5 \u767c\u6247\u5f62\u7a7f\u900f\u5f48\u3002"
+  s2Description: "\u3010\u53f3\u9375\u3011\u539f\u5730\u65cb\u8f49\u4e00\u5708,\u4f9d\u5e8f\u5411\u56db\u5468\u5c04\u51fa\u7a7f\u900f\u5f48\u3002"
   debuffIconPrefab: {fileID: 7662927050572290700, guid: 18d6e24e85a4c0449bd828fba8bfa37d, type: 3}
   debuffIconLocalOffset: {x: 0.4, y: -0.4, z: 0}
   curseFallAcceleration: 6
   curseMaxFallSpeed: 5
   curseUpwardInputMultiplier: 0.15
   bulletPrefab: {fileID: 3000001, guid: b65f630485acc2d4e9fcbe117ecfb4bd, type: 3}
+  skillBulletPrefab: {fileID: 3000001, guid: 01b997334fb84cceb488942e7821e246, type: 3}

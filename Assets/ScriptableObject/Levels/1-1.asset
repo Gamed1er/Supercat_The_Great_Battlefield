@@ -14,6 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelId: 1-1
   levelName: "\u72D7\u4ED4"
+  mapCategory: 0
+  chapter: 1
+  mapPosition: {x: 0.15, y: 0.5}
+  mapTitle: "1-1 \u50B3\u8AAA\u7684\u958B\u59CB"
+  description: "\uFF08\u95DC\u5361\u7C21\u4ECB\u5F85\u88DC\uFF09"
+  prerequisiteLevel: {fileID: 0}
+  prerequisiteMinDifficulty: 0
   preBattleStoryScript: {fileID: 4900000, guid: 88b9007cfa219604eb36414aebf3bda2, type: 3}
   rivalDialogueScript: {fileID: 4900000, guid: ab3c71c461b3e3e48941febc291fbce0, type: 3}
   rivalCharacterId: Doge

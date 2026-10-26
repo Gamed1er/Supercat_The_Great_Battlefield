@@ -54,9 +54,10 @@ public class RivalBarkUI : MonoBehaviour {
         Time.timeScale = 0f;
 
         root.SetActive(true);
-        if (nameText != null) nameText.text = characterId ?? "";
+        StoryCharacter character = StoryCharacter.Load(characterId);
+        if (nameText != null) nameText.text = character != null ? character.displayName : "";
         if (portraitImage != null) {
-            Sprite sprite = !string.IsNullOrEmpty(characterId) ? Resources.Load<Sprite>($"Images/Characters/{characterId}/{expression}") : null;
+            Sprite sprite = character != null ? character.GetSprite(expression) : null;
             portraitImage.sprite = sprite;
             portraitImage.enabled = sprite != null;
         }

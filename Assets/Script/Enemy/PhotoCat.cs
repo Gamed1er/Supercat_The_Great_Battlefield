@@ -36,6 +36,7 @@ public class PhotoCat : PairedBossEnemy {
     public float flashDamagePercent = 0.5f;
     public float flashStunDuration = 2f;
     [Range(0f, 1f)] public float flashChanceWhenOutOfRange = 0.25f; // 玩家不在閃光燈範圍內時,仍有這個機率選閃光燈(其餘選拍照)
+    public GameObject flashEffectPrefab; // 判定瞬間在攝影貓身上生成的放大+淡出特效(SmokePuff),起始大小/持續時間在 prefab 上調,最終直徑固定放大到閃光燈範圍
 
     [Header("拍照方向限制 (同一側最多連續放幾次,超過要冷卻幾秒才能再選同一側)")]
     public int maxConsecutivePhotoPerSide = 3;
@@ -197,6 +198,7 @@ public class PhotoCat : PairedBossEnemy {
 
         Vector2 origin = rb.position;
         Vector2 fireDir = pendingPhotoSide == EdgeSide.Left ? Vector2.right : Vector2.left;
+        SetFacing(fireDir.x); // 走位時是面向邊界(背對要開火的方向),開火前轉身面向對側;前/後免傷也跟著用新的面向判斷
         float halfSpan = photoBulletFanDegrees * 0.5f;
 
         for (int i = 0; i < photoBulletCount; i++) {
@@ -226,6 +228,8 @@ public class PhotoCat : PairedBossEnemy {
         AudioManager.Instance.PlaySFX(castSfxName); // 施放當下的音效;crit_hit1 是命中判定時爆擊才會另外播放的音效,不是施法音效,兩者不衝突
         yield return new WaitForSeconds(flashSpinDuration);
 
+        SpawnFlashEffect();
+
         bool hitPlayer = false;
         foreach (Collider2D hit in Physics2D.OverlapCircleAll(rb.position, flashRadius)) {
             if (!hit.CompareTag("Player")) continue;
@@ -238,6 +242,13 @@ public class PhotoCat : PairedBossEnemy {
         }
 
         if (hitPlayer) Partner?.OnPartnerHitPlayer();
+    }
+
+    // 特效放大到最後的直徑剛好等於閃光燈判定範圍(flashRadius * 2),順便當作範圍提示;sprite 本身寬 1 單位(PPU = 圖片寬度),
+    // 所以 prefab 的 localScale 就是起始寬度。這裡只改 growTo(Update 才讀)
+    void SpawnFlashEffect() {
+        GameObject effect = Instantiate(flashEffectPrefab, rb.position, Quaternion.identity);
+        effect.GetComponent<SmokePuff>().growTo = flashRadius * 2f / effect.transform.localScale.x;
     }
 
     protected override float GetIncomingDamageMultiplier() {

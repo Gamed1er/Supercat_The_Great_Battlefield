@@ -56,8 +56,8 @@ public class StoryManager : MonoBehaviour {
     Color backgroundOriginalColor;
     float leftRestX;
     float rightRestX;
-    string leftCharacterId;
-    string rightCharacterId;
+    StoryCharacter leftCharacter;
+    StoryCharacter rightCharacter;
 
     bool isTyping;
     bool skipTypingRequested;
@@ -167,8 +167,9 @@ public class StoryManager : MonoBehaviour {
         Image image = step.Side == StorySide.Left ? leftCharacterImage : rightCharacterImage;
         float restX = step.Side == StorySide.Left ? leftRestX : rightRestX;
 
-        image.sprite = Resources.Load<Sprite>($"Images/Characters/{step.CharacterId}/{step.Expression}");
-        if (step.Side == StorySide.Left) leftCharacterId = step.CharacterId; else rightCharacterId = step.CharacterId;
+        StoryCharacter character = StoryCharacter.Load(step.CharacterId);
+        image.sprite = character != null ? character.GetSprite(step.Expression) : null;
+        if (step.Side == StorySide.Left) leftCharacter = character; else rightCharacter = character;
 
         Vector2 restPosition = new Vector2(restX, ResizeToFitAndGetBottomAlignedY(image));
         Vector2 offscreen = restPosition + new Vector2(step.Side == StorySide.Left ? -slideOffset : slideOffset, 0f);
@@ -194,7 +195,7 @@ public class StoryManager : MonoBehaviour {
         Vector2 restPosition = image.rectTransform.anchoredPosition;
         Vector2 offscreen = restPosition + new Vector2(step.Side == StorySide.Left ? -slideOffset : slideOffset, 0f);
 
-        if (step.Side == StorySide.Left) leftCharacterId = null; else rightCharacterId = null;
+        if (step.Side == StorySide.Left) leftCharacter = null; else rightCharacter = null;
 
         yield return SlidePosition(image.rectTransform, restPosition, offscreen);
         image.gameObject.SetActive(false);
@@ -211,7 +212,7 @@ public class StoryManager : MonoBehaviour {
     }
 
     IEnumerator PlaySayStep(StoryStep step) {
-        characterNameText.text = GetCurrentCharacterId(step.Side);
+        characterNameText.text = GetCurrentCharacterName(step.Side);
         leftCharacterImage.color = step.Side == StorySide.Left ? activeSpeakerColor : dimmedSpeakerColor;
         rightCharacterImage.color = step.Side == StorySide.Right ? activeSpeakerColor : dimmedSpeakerColor;
 
@@ -219,10 +220,9 @@ public class StoryManager : MonoBehaviour {
         yield return WaitForAdvance();
     }
 
-    string GetCurrentCharacterId(StorySide side) {
-        if (side == StorySide.Left) return leftCharacterId ?? "";
-        if (side == StorySide.Right) return rightCharacterId ?? "";
-        return "";
+    string GetCurrentCharacterName(StorySide side) {
+        StoryCharacter character = side == StorySide.Left ? leftCharacter : side == StorySide.Right ? rightCharacter : null;
+        return character != null ? character.displayName : "";
     }
 
     IEnumerator PlayMiddleStep(StoryStep step) {

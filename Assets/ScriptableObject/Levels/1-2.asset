@@ -14,18 +14,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelId: 1-2
   levelName: "\u651D\u5F71\u8C93\u8207\u4F8F\u5138\u8C93"
-  preBattleStoryScript: {fileID: 0}
-  rivalDialogueScript: {fileID: 0}
-  rivalCharacterId: 
-  rivalPortraitExpression: normal
+  mapCategory: 0
+  chapter: 1
+  mapPosition: {x: 0.45, y: 0.5}
+  mapTitle: "1-2 +80 \u4E4B\u4E82"
+  description: "\uFF08\u95DC\u5361\u7C21\u4ECB\u5F85\u88DC\uFF09"
+  prerequisiteLevel: {fileID: 11400000, guid: c84302928d6e47c46883d81820968aeb, type: 2}
+  prerequisiteMinDifficulty: 0
+  preBattleStoryScript: {fileID: 4900000, guid: f4b1c095e9804fa581895ccdcf10e7fb, type: 3}
+  rivalDialogueScript: {fileID: 4900000, guid: 1ca5a8ecfda04d52908b60264c87bf30, type: 3}
+  rivalCharacterId: JurassicCat
+  rivalPortraitExpression: idle
   mapWidthMultiplier: 1
   mapHeightMultiplier: 1
   groundHeightPercent: 0.4
   playerSpawnPosition: {x: 0, y: 0}
   enemyPool:
   - enemyPrefab: {fileID: 4333290413290182245, guid: e86216b8f40bbbb4c9db91e1047f9aac, type: 3}
-    spawnPosition: {x: 3, y: -3}
+    spawnPosition: {x: 4.5, y: -3}
   - enemyPrefab: {fileID: 209584565902258529, guid: de098f8af0ad88d49ada869326b47df6, type: 3}
-    spawnPosition: {x: 3, y: -3}
+    spawnPosition: {x: -4.5, y: -3}
   bgmName: normal_battle
   backgroundTilePrefab: {fileID: 1594757997138783139, guid: 7a6d2710a928ba64886a58147d3bef63, type: 3}

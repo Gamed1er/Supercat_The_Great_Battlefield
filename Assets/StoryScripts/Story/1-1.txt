@@ -1,8 +1,6 @@
 #bg 1
 #bgm normal_battle
 
-#middle 第零幕、再次初山
-
 #enter left SuperCat idle
 #speak left
 超人貓一如往常的正在四處巡邏

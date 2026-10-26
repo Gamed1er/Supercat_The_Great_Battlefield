@@ -2,11 +2,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-// 臨時測試用大廳(Lobby.unity):選角色、選難度、勾選是否跳過劇情,按關卡按鈕直接出發;另有設定與離開遊戲按鈕。
-// 這支腳本只把按鈕操作翻譯成 GameFlow / SettingsPanelUI 的呼叫,出戰流程與設定邏輯都不在這裡——
-// 之後做正式大廳時換掉這支腳本跟場景即可,GameFlow/DisplaySettings/SettingsPanelUI 照用。
-// UI 物件在 Inspector 手動接線(可用 Tools > Lobby > Build Test Lobby Scene 自動生成場景並接好)
-public class LobbyUI : MonoBehaviour {
+// 測試用大廳(DebugLobby.unity,只在 Editor 直接開,不進 build):選角色、任意選難度(不受解鎖限制)、勾選是否跳過劇情,
+// 按關卡按鈕直接出發,右側列出敵人數值方便調平衡;另有設定與離開遊戲按鈕。正式大廳是 LobbyMenuUI(Lobby.unity)。
+// 這支腳本只把按鈕操作翻譯成 GameFlow / SettingsPanelUI 的呼叫,出戰流程與設定邏輯都不在這裡。
+// UI 物件在 Inspector 手動接線(可用 Tools > Lobby > Build Debug Lobby Scene 自動生成場景並接好)
+public class DebugLobbyUI : MonoBehaviour {
     [System.Serializable]
     public class CharacterOption {
         public Button button;
@@ -33,7 +33,7 @@ public class LobbyUI : MonoBehaviour {
     [SerializeField] int defaultDifficulty = 2;
 
     [Header("敵人資訊 (測試版專用,跟著難度滑桿即時更新)")]
-    [SerializeField] LobbyEnemyInfoPanel enemyInfoPanel;
+    [SerializeField] DebugLobbyEnemyInfoPanel enemyInfoPanel;
 
     [Header("劇情")]
     [SerializeField] Toggle skipStoryToggle; // 勾選 = 有劇情的關卡也直接進戰鬥

@@ -16,9 +16,16 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
     public float knockbackDuration = 0.3f; // 被擊退時的硬直時間
 
     [Header("技能 UI 圖示")]
+    [SerializeField] Sprite normalAttackIcon; // 普攻的圖示,目前只有大廳角色選擇視窗會顯示
     [SerializeField] Sprite s1Icon; // 技能槽1(dashSkill)的圖示,各角色 prefab 各自指定
     [SerializeField] Sprite s2Icon; // 技能槽2(ultimateSkill)的圖示,各角色 prefab 各自指定
     [SerializeField] Sprite portrait; // 技能槽左上方顯示的出戰角色靜態圖,各角色 prefab 各自指定
+
+    [Header("角色介紹 (大廳角色選擇視窗用)")]
+    [SerializeField] string displayName;
+    [SerializeField, TextArea(2, 5)] string normalAttackDescription;
+    [SerializeField, TextArea(2, 5)] string s1Description;
+    [SerializeField, TextArea(2, 5)] string s2Description;
 
     [Header("妨害效果圖示")]
     [SerializeField] GameObject debuffIconPrefab; // 掛在角色身上顯示目前妨害效果的圖示,觸發時才 Instantiate,見 DebuffIconStack
@@ -73,6 +80,11 @@ public class PlayerBase : MonoBehaviour, IDamageable, IKnockbackable {
     public Sprite S1_Icon => s1Icon;
     public Sprite S2_Icon => s2Icon;
     public Sprite Portrait => portrait;
+    public Sprite NormalAttackIcon => normalAttackIcon;
+    public string DisplayName => displayName;
+    public string NormalAttackDescription => normalAttackDescription;
+    public string S1_Description => s1Description;
+    public string S2_Description => s2Description;
 
     protected virtual void Awake() {
         rb = GetComponent<Rigidbody2D>();

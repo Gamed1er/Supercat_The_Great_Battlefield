@@ -219,11 +219,11 @@ MonoBehaviour:
   shieldBreakStunDuration: 5
   rockPrefab: {fileID: 1300000105, guid: 541fd963db174190a3c0f07c97de0848, type: 3}
   rockFirstDelay: 5
-  rockIntervalMin: 3
-  rockIntervalMaxBase: 15
-  rockIntervalMaxPerDifficulty: 2
-  rockCountMin: 2
-  rockCountMax: 5
+  rockIntervalMin: 1
+  rockIntervalMaxBase: 4
+  rockIntervalMaxPerDifficulty: 0.5
+  rockCountMin: 1
+  rockCountMax: 2
   rockSpeed: 8
   rockAngleJitterDegrees: 30
   ufoPrefab: {fileID: 1300000205, guid: 9425eba4dddb484a8e2d0deb4214eef7, type: 3}

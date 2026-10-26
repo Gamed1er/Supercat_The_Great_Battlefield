@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d72061adaf4b427aa360221051bb4259, type: 3}
+  m_Name: PhotoCat
+  m_EditorClassIdentifier: 
+  displayName: "\u651D\u5F71\u5E2B\u8C93"
+  expressions:
+  - name: idle
+    sprite: {fileID: 21300000, guid: 7d6472a1b0ea2a7428938c66bec56336, type: 3}

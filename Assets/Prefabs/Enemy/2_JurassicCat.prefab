@@ -171,6 +171,8 @@ MonoBehaviour:
   debuffIconLocalOffset: {x: 0.4, y: -0.4, z: 0}
   hammerSfxName: shoot
   meteorSfxName: shoot
+  meteorFallSfxName: shaking2
+  meteorFallSfxLeadTime: 0.2
   moveSpeed: 9
   directionCheckInterval: 1
   hammerXAlignTolerance: 0.5
@@ -180,19 +182,27 @@ MonoBehaviour:
   hammerCooldownBase: 3
   hammerCooldownPerDifficulty: 0.2
   hammerDamagePercent: 1
-  meteorCooldown: 20
+  meteorCooldown: 10
   meteorChargeDuration: 0.5
   meteorLaunchHeight: 6
-  meteorLaunchSpeed: 12
-  meteorWarningDuration: 5
-  meteorImpactRadius: 4
-  meteorWarningTopMargin: 0.5
-  meteorFollowSpeed: 5
-  meteorSlowdownStartRemaining: 2
-  meteorFreezeRemaining: 0.8
-  meteorFallDuration: 0.2
+  meteorLaunchSpeed: 15
+  meteorWarningDurationDifficulty0: 3
+  meteorWarningDurationDifficulty5: 2.5
+  meteorWarningTrackDuration: 1.5
+  meteorFollowSpeed: 15
+  meteorColumnWidth: 6
+  meteorFallSpeed: 20
+  meteorFallEdgeMargin: 1
   meteorPlayerDamagePercent: 2.5
   meteorPartnerStunDuration: 5
-  warningZonePrefab: {fileID: 0}
+  warningColumnPrefab: {fileID: 0}
+  meteorPowerEffectPrefab: {fileID: 4000001, guid: f88d0783d7e24f0b83e015764242e53b, type: 3}
+  groundCrackEffectPrefab: {fileID: 4000001, guid: e92286174bc74fcaa528e80a73a3937a, type: 3}
+  mudSplashEffectPrefab: {fileID: 4000001, guid: 0d4221fb64a84533bdf27ea1fa31f678, type: 3}
+  shockWaveEffectPrefab: {fileID: 4000001, guid: bc0c0a2c7a1948f7b54b025a6bc38c74, type: 3}
+  groundAshEffectPrefab: {fileID: 4000001, guid: 35b6de3493b14a6cb89fff2fcdc90a66, type: 3}
+  landingEffectForwardOffset: 0.5
+  hammerLandingEffectScale: 0.7
+  hammerLandingEffectDurationScale: 0.3
   damageImmunePercent: 0.66
   bodyContactDamageInterval: 0.5

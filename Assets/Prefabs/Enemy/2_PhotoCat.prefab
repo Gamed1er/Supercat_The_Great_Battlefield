@@ -171,9 +171,9 @@ MonoBehaviour:
   debuffIconLocalOffset: {x: 0.4, y: -0.4, z: 0}
   castSfxName: shoot
   moveSpeedBase: 3
-  moveSpeedPerDifficulty: 0.4
+  moveSpeedPerDifficulty: 0.2
   jumpCastYTolerance: 2
-  verticalMoveSpeed: 6
+  verticalMoveSpeed: 10
   groundEdgeMargin: 0.8
   photoBulletPrefab: {fileID: 5000001, guid: 7c6c26c21bea45b8ad40f41179e96fc9, type: 3}
   photoBulletCount: 5
@@ -181,12 +181,13 @@ MonoBehaviour:
   photoBulletInterval: 0.1
   photoBulletSpeed: 10
   photoDamagePercent: 0.5
-  photoStunDuration: 0.5
+  photoStunDuration: 0.15
   flashRadius: 3
-  flashSpinDuration: 0
+  flashSpinDuration: 0.2
   flashDamagePercent: 0.5
-  flashStunDuration: 0.5
+  flashStunDuration: 0.3
   flashChanceWhenOutOfRange: 0.25
+  flashEffectPrefab: {fileID: 4000001, guid: 4f662f0acc2c4909b96d87e526c3b4f9, type: 3}
   maxConsecutivePhotoPerSide: 3
   photoSideCooldown: 5
   frontImmunePercent: 0.5
