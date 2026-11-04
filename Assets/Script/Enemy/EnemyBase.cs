@@ -30,6 +30,14 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
     [SerializeField] Vector3 debuffIconLocalOffset = new Vector3(0.4f, -0.4f, 0f); // 角色圖像右下方
 
     protected Animator animator; // 沒有 Animator 元件的敵人(例如這個測試用的 EnemyBase)會是 null,SetTrigger 前記得判斷
+    // 用 BCU 動畫(子物件上的 BcAnimPlayer)的敵人才有,其他敵人是 null。擊退/死亡/暈眩/死亡淡出由這裡統一處理,
+    // 移動與技能要播哪段動畫由子類別自己決定。
+    protected BcAnimPlayer bcAnim;
+    // BC 的動畫慣例:00 走路、01 待機、02 攻擊、03 被擊退
+    protected const string BcClipWalk = "00";
+    protected const string BcClipIdle = "01";
+    protected const string BcClipAttack = "02";
+    protected const string BcClipKnockback = "03";
     protected Rigidbody2D rb;
 
     protected Vector2 groundMin;
@@ -69,6 +77,7 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
         GetComponent<CircleCollider2D>().isTrigger = true;
 
         animator = GetComponent<Animator>();
+        bcAnim = GetComponentInChildren<BcAnimPlayer>();
         knockback = new KnockbackState(rb);
         debuffState = new EnemyDebuffState(gameObject, debuffIconPrefab, debuffIconLocalOffset);
     }
@@ -84,6 +93,7 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
         // 暈眩時動畫暫停播放,套用到所有敵人,不用每個子類別各自處理;死亡後停止套用,避免死亡當下還在暈眩中時,
         // 死亡動畫被卡在 speed=0 直到暈眩計時器跑完(debuffState 不管死活都會繼續 Tick,見上面兩行)
         if (animator != null) animator.speed = (!IsDead && IsStunned) ? 0f : 1f;
+        if (bcAnim != null) bcAnim.Speed = (!IsDead && IsStunned) ? 0f : 1f;
 
         bool isKnockedBackNow = IsKnockedBack;
         if (wasKnockedBackLastTick && !isKnockedBackNow) debuffState.NotifyKnockbackEnded();
@@ -127,6 +137,7 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
         if (!knockback.TryApply(direction, distance * KnockbackDistanceMultiplier, knockbackDuration)) return false;
 
         if (animator != null) animator.SetTrigger("KB");
+        if (bcAnim != null) bcAnim.Play(BcClipKnockback, loop: false);
         debuffState.NotifyKnockbackApplied();
         return true;
     }
@@ -176,11 +187,16 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
     protected virtual void Die() {
         IsDead = true;
         StopAllCoroutines(); // 取消所有還在跑的行為(跳躍/大狗叫等),死亡當下立刻打斷,不會播完手上的動作再結束
+        PlayDeathPresentation();
+    }
 
+    // 死亡的畫面表現:預設播 KB(BCU 動畫播 03)後淡出。有自己死亡動畫的敵人(例如滾石的碎裂)覆寫這裡
+    protected virtual void PlayDeathPresentation() {
         if (animator != null) {
             animator.SetBool("isDeath", true);
             animator.SetTrigger("KB");
         }
+        if (bcAnim != null) bcAnim.Play(BcClipKnockback, loop: false);
 
         StartCoroutine(DeathFadeRoutine());
     }
@@ -198,14 +214,18 @@ public class EnemyBase : MonoBehaviour, IDamageable, IKnockbackable {
 
         if (!TryGetComponent(out SpriteRenderer spriteRenderer)) yield break;
 
+        // BCU 動畫的敵人,畫面是子物件的零件;root 的 SpriteRenderer 只是為了 RequireComponent 保留著(Sprite 留空),一起淡出不影響
         Color startColor = spriteRenderer.color;
         float elapsed = 0f;
         while (elapsed < DeathFadeDuration) {
             elapsed += Time.deltaTime;
-            spriteRenderer.color = new Color(startColor.r, startColor.g, startColor.b, Mathf.Lerp(startColor.a, 0f, elapsed / DeathFadeDuration));
+            float t = elapsed / DeathFadeDuration;
+            spriteRenderer.color = new Color(startColor.r, startColor.g, startColor.b, Mathf.Lerp(startColor.a, 0f, t));
+            if (bcAnim != null) bcAnim.Alpha = Mathf.Lerp(1f, 0f, t);
             yield return null;
         }
 
         spriteRenderer.color = new Color(startColor.r, startColor.g, startColor.b, 0f);
+        if (bcAnim != null) bcAnim.Alpha = 0f;
     }
 }

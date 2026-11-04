@@ -1,13 +1,13 @@
 using UnityEngine;
 
 // 赤井抄太郎:火力至上的彈幕角色,機動性較差(沒有位移技能)。
-// 普攻/戰技/大招子彈皆具破壞性且都算「普攻類型子彈」,命中敵人或摧毀敵方子彈時觸發被動,縮短戰技與大招冷卻。
+// 普攻/戰技/大招子彈皆具破壞性且都算「普攻類型子彈」,命中敵人時觸發被動,縮短戰技與大招冷卻(摧毀敵方子彈不算)。
 // 戰技/大招改用直線飛行、可穿透敵人的長條子彈(skillBulletPrefab),普攻維持一般子彈。
 public class RedSuperCat : PlayerBase {
     [SerializeField] GameObject bulletPrefab;
     [SerializeField] GameObject skillBulletPrefab; // 戰技/大招用的穿透長條子彈
 
-    const float passiveCooldownReduction = 0.5f; // 被動:命中時縮短戰技/大招冷卻的秒數
+    const float passiveCooldownReduction = 0.4f; // 被動:命中時縮短戰技/大招冷卻的秒數
 
     AutoLockShootSkill normalAttackSkill;
     BarrageSkill barrageSkill;
@@ -44,7 +44,7 @@ public class RedSuperCat : PlayerBase {
     // 大招是純冷卻制(不吃充能),UI 用剩餘秒數顯示比「n / 120」的充能式格式更直觀
     public override bool S2_ShowSecondsFormat => true;
 
-    // 被動:普攻/戰技/大招的子彈命中敵人或摧毀敵方子彈時,縮短戰技和大招的冷卻(僅限這個角色,不動 PlayerBase/ISkill 以外的共用邏輯)
+    // 被動:普攻/戰技/大招的子彈命中敵人時(摧毀敵方子彈不算),縮短戰技和大招的冷卻(僅限這個角色,不動 PlayerBase/ISkill 以外的共用邏輯)
     void OnProjectileHit() {
         barrageSkill.ReduceCooldown(passiveCooldownReduction);
         radialBurstSkill.ReduceCooldown(passiveCooldownReduction);

@@ -22,7 +22,7 @@ public class Bullet : MonoBehaviour {
     MonoBehaviour owner;
     string targetTag;
     BulletType bulletType;
-    Action onHit; // 命中目標或摧毀敵方子彈時呼叫,給發射端(技能)掛自訂效果用,預設不掛(null)
+    Action onHit; // 命中目標時呼叫(摧毀敵方子彈不算),給發射端(技能)掛自訂效果用,預設不掛(null)
     bool destroyed;
     bool pierce;
     readonly HashSet<Collider2D> piercedTargets = new HashSet<Collider2D>(); // pierce 用:已經打過的目標,避免重複傷害
@@ -142,8 +142,7 @@ public class Bullet : MonoBehaviour {
     void HandleBulletCollision(Bullet other) {
         if (targetTag == other.targetTag) return;
         if (bulletType == BulletType.Destructive && other.bulletType != BulletType.Immune) {
-            other.DestroySelf();
-            onHit?.Invoke(); // 摧毀敵方子彈也算命中,通知發射端(例如赤井的被動)
+            other.DestroySelf(); // 摧毀敵方子彈不算命中,不觸發 onHit(赤井的被動只在打到敵人時觸發)
         }
     }
 

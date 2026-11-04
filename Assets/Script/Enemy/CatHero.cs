@@ -12,6 +12,14 @@ public class CatHero : EnemyBase {
     [Header("佔位圖 (還沒有美術時,SpriteRenderer 沒指定 sprite 就用這個顏色的方塊)")]
     [SerializeField] Color placeholderColor = new Color(0.9f, 0.75f, 0.2f);
 
+    [Header("動畫 (BCU 動畫在子物件的 BcAnimPlayer:飛行 00、閒置/光彈/超級霰彈 01、墜地拳 02、擊退/死亡 03 由 EnemyBase 處理)")]
+    // 02 墜地拳動畫的分段(30 fps):0~vanishEndFrame 消失;fallStartFrame~fallEndFrame 下墜(停在 fallEndFrame);
+    // returnStartFrame~最後 回到待機姿勢。中間的空白段和落地特效段(墜地拳穿出畫面底部,用不到)直接跳過
+    [SerializeField] int vanishEndFrame = 30;
+    [SerializeField] int fallStartFrame = 67;
+    [SerializeField] int fallEndFrame = 70;
+    [SerializeField] int returnStartFrame = 129;
+
     [Header("音效")]
     [SerializeField] string shootSfxName = "shoot"; // 光彈/超級霰彈每次開火
     [SerializeField] string fallPunchSfxName = "shaking2"; // 墜地拳下墜前 fallSfxLeadTime 秒播放
@@ -149,7 +157,8 @@ public class CatHero : EnemyBase {
         base.Awake();
         spriteRenderer = GetComponent<SpriteRenderer>();
         bodyCollider = GetComponent<CircleCollider2D>();
-        if (spriteRenderer.sprite == null) spriteRenderer.sprite = PlaceholderSprite.Get(placeholderColor);
+        // 有 BCU 動畫時 root 的 SpriteRenderer 刻意留空(畫面在子物件上),不補佔位方塊
+        if (spriteRenderer.sprite == null && bcAnim == null) spriteRenderer.sprite = PlaceholderSprite.Get(placeholderColor);
 
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj != null) player = playerObj.GetComponent<PlayerBase>();
@@ -172,7 +181,8 @@ public class CatHero : EnemyBase {
         if (!IsStunned) {
             float dt = Time.deltaTime / CooldownTimeMultiplier;
             if (hasEnteredPhase2 && !isShotgunning) phase2Timer -= dt;
-            TickSummonTimers(dt);
+            // 超級霰彈期間(含飛往中央)不生成新召喚物:計時器直接凍結,放完後從剩餘時間接著倒數,避免一結束就連續冒出來
+            if (!isShotgunning) TickSummonTimers(dt);
         }
 
         if (isPerformingAction || IsKnockedBack || IsStunned) return;
@@ -215,6 +225,7 @@ public class CatHero : EnemyBase {
         idleBobTime += Time.fixedDeltaTime;
         float current = Mathf.Sin(idleBobTime * idleBobFrequency * 2f * Mathf.PI);
         rb.MovePosition(rb.position + Vector2.up * (current - previous) * idleBobAmplitude);
+        PlayLoopClip(BcClipIdle);
 
         FacePlayer();
     }
@@ -222,12 +233,14 @@ public class CatHero : EnemyBase {
     void FacePlayer() => SetFacing(player.transform.position.x - rb.position.x);
 
     void SetFacing(float dx) {
-        if (dx > 0.01f) spriteRenderer.flipX = false;
-        else if (dx < -0.01f) spriteRenderer.flipX = true;
+        if (dx > 0.01f) { spriteRenderer.flipX = false; bcAnim.SetFacing(true); }
+        else if (dx < -0.01f) { spriteRenderer.flipX = true; bcAnim.SetFacing(false); }
     }
 
-    void SetAnimTrigger(string trigger) {
-        if (animator != null) animator.SetTrigger(trigger); // 佔位 prefab 還沒有 Animator,見 EnemyBase.animator
+    // 切換循環動畫(飛行/閒置)。墜地拳最後「回到待機」那段 02 還沒播完時不切,讓它播完再接閒置
+    void PlayLoopClip(string clip) {
+        if (bcAnim.CurrentClipName == BcClipAttack && !bcAnim.IsDone) return;
+        bcAnim.PlayIfNotPlaying(clip);
     }
 
     // 左右兩側隨機站位,不站中間
@@ -241,6 +254,7 @@ public class CatHero : EnemyBase {
 
     // 等速飛行到目標點;可不可以被打斷由呼叫端的 isUninterruptible 決定
     IEnumerator FlyTo(Vector2 target) {
+        PlayLoopClip(BcClipWalk);
         while (Vector2.Distance(rb.position, target) > 0.05f) {
             Vector2 next = Vector2.MoveTowards(rb.position, target, flySpeed * MoveSpeedMultiplier * Time.fixedDeltaTime);
             SetFacing(next.x - rb.position.x);
@@ -257,7 +271,7 @@ public class CatHero : EnemyBase {
 
         yield return FlyTo(PickSideStation());
 
-        SetAnimTrigger("Attack");
+        PlayLoopClip(BcClipIdle);
         Vector2 restPosition = rb.position; // 開火期間的基準位置:子彈都從這裡射出,抖動結束也回到這裡
         for (int i = 0; i < lightBulletCount; i++) {
             FacePlayer();
@@ -293,7 +307,12 @@ public class CatHero : EnemyBase {
     IEnumerator FallPunchRoutine() {
         isPerformingAction = true;
         isUninterruptible = true;
-        SetAnimTrigger("Vanish");
+
+        // 消失:02 的 0~vanishEndFrame 伸縮成往上飛出的時間,飛到頂剛好消失,之後停在消失那一幀
+        bcAnim.Play(BcClipAttack, loop: false);
+        bcAnim.HoldFrame = vanishEndFrame;
+        float launchDuration = Mathf.Max(vanishLaunchHeight / vanishLaunchSpeed, 0.05f);
+        bcAnim.PlaybackRate = (vanishEndFrame / BcAnimPlayer.FramesPerSecond) / launchDuration;
 
         Vector2 originalPosition = rb.position; // 下墜穿出畫面後飛回這裡
 
@@ -333,7 +352,10 @@ public class CatHero : EnemyBase {
         rb.position = fallStart;
         transform.position = fallStart;
         spriteRenderer.enabled = true;
-        SetAnimTrigger("Fall");
+        bcAnim.Alpha = 1f;
+        // 下墜:播 fallStartFrame~fallEndFrame 之後停在 fallEndFrame,一路掉出畫面
+        bcAnim.PlayFrom(BcClipAttack, fallStartFrame);
+        bcAnim.HoldFrame = fallEndFrame;
 
         float hitRadius = bodyCollider.radius * Mathf.Abs(transform.lossyScale.x);
         bool hasHitPlayer = false;
@@ -360,6 +382,8 @@ public class CatHero : EnemyBase {
         // 穿出畫面後恢復可被攻擊,從畫面下方飛回施放前的位置。飛回地圖範圍內之前維持不可打斷,
         // 避免在畫面外被擊退/暈眩打斷後卡在玩家打不到的地方閒置;回到地圖內之後才照常可以被打斷。
         SetBodyHidden(false);
+        // 從畫面下方飛回來時播 02 最後「回到待機」那段;播完之前 PlayLoopClip 不會切成飛行/閒置
+        bcAnim.PlayFrom(BcClipAttack, returnStartFrame);
         float reenterY = mapMin.y + fallEdgeMargin;
         while (rb.position.y < reenterY && rb.position != originalPosition) {
             Vector2 next = Vector2.MoveTowards(rb.position, originalPosition, flySpeed * MoveSpeedMultiplier * Time.fixedDeltaTime);
@@ -376,6 +400,7 @@ public class CatHero : EnemyBase {
     void SetBodyHidden(bool hidden) {
         isUntargetable = hidden;
         spriteRenderer.enabled = !hidden;
+        bcAnim.Alpha = hidden ? 0f : 1f;
         bodyCollider.enabled = !hidden;
     }
 
@@ -442,6 +467,7 @@ public class CatHero : EnemyBase {
         isShotgunning = true;
 
         yield return FlyTo((mapMin + mapMax) * 0.5f);
+        PlayLoopClip(BcClipIdle);
 
         shieldMax = MaxHealth * shieldPercent;
         shield = shieldMax;
@@ -455,7 +481,6 @@ public class CatHero : EnemyBase {
                 continue;
             }
 
-            SetAnimTrigger("Attack");
             FacePlayer();
             for (int i = 0; i < bulletsPerRound; i++) {
                 float rad = Random.Range(0f, 360f) * Mathf.Deg2Rad;

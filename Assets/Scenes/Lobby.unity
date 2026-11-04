@@ -11649,6 +11649,7 @@ MonoBehaviour:
   characterPopup: {fileID: 1206914564}
   backButton: {fileID: 1195228088}
   mapSettingsButton: {fileID: 1265631464}
+  battleStartSfx: battle_start
   settingsPanel: {fileID: 347645353}
   titleBgm: lobby
   mapBgm: map
@@ -17708,6 +17709,7 @@ MonoBehaviour:
   idleClipName: Move
   kbClipName: KB
   kbHoldDuration: 0.5
+  kbSfx: meow
 --- !u!1 &2049096178
 GameObject:
   m_ObjectHideFlags: 0

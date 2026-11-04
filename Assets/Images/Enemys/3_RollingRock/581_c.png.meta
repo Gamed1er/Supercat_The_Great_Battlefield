@@ -1,0 +1,787 @@
+fileFormatVersion: 2
+guid: 3cc4c2fb355eea845ba70e2c66e247a9
+TextureImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 3
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: 00_000.png
+      rect:
+        serializedVersion: 2
+        x: 39
+        y: 7
+        width: 1
+        height: 1
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3cb6ea25d2cfc03c0800000000000000
+      internalID: -4391858265002185789
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 01_001_shadow.png
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 3
+        width: 36
+        height: 5
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cfc19a5cc361f37a0800000000000000
+      internalID: -6395368495572771588
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 02_002_face_default.png
+      rect:
+        serializedVersion: 2
+        x: 204
+        y: 1
+        width: 19
+        height: 17
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2dffc608478e5dd50800000000000000
+      internalID: 6761566002635145170
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 03_003_face_atk.png
+      rect:
+        serializedVersion: 2
+        x: 123
+        y: 2
+        width: 26
+        height: 37
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 99761da93fd711c20800000000000000
+      internalID: 3175457697500850073
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 04_004_body_1.png
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 181
+        width: 64
+        height: 55
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e5c8930de9513ebe0800000000000000
+      internalID: -1449290883240719266
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 05_005_body_2.png
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 124
+        width: 64
+        height: 55
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1b67bfbde1ffae640800000000000000
+      internalID: 5110177235210041009
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 06_006_body_3.png
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 67
+        width: 64
+        height: 55
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 05133c456e4771ed0800000000000000
+      internalID: -2443355740211826352
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 07_007_body_4.png
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 10
+        width: 64
+        height: 55
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0970890f69eb79f70800000000000000
+      internalID: 9194026719791024016
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 08_008_body_5.png
+      rect:
+        serializedVersion: 2
+        x: 67
+        y: 181
+        width: 64
+        height: 55
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: df4c4190a17a911b0800000000000000
+      internalID: -5685329324315196163
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 09_009_body_6.png
+      rect:
+        serializedVersion: 2
+        x: 133
+        y: 181
+        width: 64
+        height: 55
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 820f58c932c188010800000000000000
+      internalID: 1191233040714952744
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 10_010_body_7.png
+      rect:
+        serializedVersion: 2
+        x: 67
+        y: 124
+        width: 64
+        height: 55
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6682cea8467fdfde0800000000000000
+      internalID: -1297609106413311898
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 11_011_body_8.png
+      rect:
+        serializedVersion: 2
+        x: 133
+        y: 124
+        width: 64
+        height: 55
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2e32732bd6e555420800000000000000
+      internalID: 2618102583620215778
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 12_012_body_crack.png
+      rect:
+        serializedVersion: 2
+        x: 141
+        y: 44
+        width: 11
+        height: 46
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0bf25da37dfbc9f90800000000000000
+      internalID: -6945465594186223696
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 13_013_damage_crack.png
+      rect:
+        serializedVersion: 2
+        x: 199
+        y: 146
+        width: 53
+        height: 35
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1c36fa3e9a6bf0980800000000000000
+      internalID: -8570430725077113919
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 14_014_atk_body_l1.png
+      rect:
+        serializedVersion: 2
+        x: 219
+        y: 51
+        width: 34
+        height: 39
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a551a63ecb34db640800000000000000
+      internalID: 5097304831801562458
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 15_015_atk_body_l2.png
+      rect:
+        serializedVersion: 2
+        x: 85
+        y: 95
+        width: 33
+        height: 27
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5cfdb00fcb83cbd40800000000000000
+      internalID: 5601414420674371525
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 16_016_atk_body_r1.png
+      rect:
+        serializedVersion: 2
+        x: 151
+        y: 2
+        width: 51
+        height: 40
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 81ea9ab8ce87080f0800000000000000
+      internalID: -1116759750237114856
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 17_017_atk_body_r2.png
+      rect:
+        serializedVersion: 2
+        x: 151
+        y: 99
+        width: 44
+        height: 23
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a0bd8e4077fa40c80800000000000000
+      internalID: -8357362082774459638
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 18_018_atk_body_l.png
+      rect:
+        serializedVersion: 2
+        x: 99
+        y: 41
+        width: 40
+        height: 49
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4277f95a77fbb2540800000000000000
+      internalID: 4984287933216290596
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 19_019_atk_body_r.png
+      rect:
+        serializedVersion: 2
+        x: 199
+        y: 92
+        width: 51
+        height: 52
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 57567a51ebfc7f3a0800000000000000
+      internalID: -6631603510965738123
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 20_020_damage_debri.png
+      rect:
+        serializedVersion: 2
+        x: 219
+        y: 24
+        width: 25
+        height: 25
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 74e1913e962c8a1c0800000000000000
+      internalID: -4492126868264640953
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 21_021_ef_hit.png
+      rect:
+        serializedVersion: 2
+        x: 198
+        y: 45
+        width: 19
+        height: 45
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3bd85fd6836e1e3d0800000000000000
+      internalID: -3179006731909493325
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 22_022_ef_smoke_1.png
+      rect:
+        serializedVersion: 2
+        x: 199
+        y: 183
+        width: 56
+        height: 53
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c3989fd3fb596c6f0800000000000000
+      internalID: -664679246379513540
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 23_023_ef_smoke_2.png
+      rect:
+        serializedVersion: 2
+        x: 154
+        y: 58
+        width: 42
+        height: 39
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8e9c4739793ddc350800000000000000
+      internalID: 6038715323341130216
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 24_024_ef_atk_smoke.png
+      rect:
+        serializedVersion: 2
+        x: 67
+        y: 38
+        width: 30
+        height: 52
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5e94171b425df9430800000000000000
+      internalID: 3791983764841777637
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 25_025_ef_atk_debri_1.png
+      rect:
+        serializedVersion: 2
+        x: 204
+        y: 20
+        width: 11
+        height: 23
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fb3a425bbef999e30800000000000000
+      internalID: 4510812336493470655
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 26_026_ef_atk_debri_2.png
+      rect:
+        serializedVersion: 2
+        x: 67
+        y: 93
+        width: 16
+        height: 29
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c181a83d0c8d24730800000000000000
+      internalID: 3981983343243302940
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 27_027_ef_kira_green.png
+      rect:
+        serializedVersion: 2
+        x: 67
+        y: 9
+        width: 26
+        height: 27
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 09396b6f47ba54b60800000000000000
+      internalID: 7729772854295040912
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 28_028_ef_kira_blue.png
+      rect:
+        serializedVersion: 2
+        x: 95
+        y: 9
+        width: 26
+        height: 27
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f9a285f75ab1a70b0800000000000000
+      internalID: -5730237178255496545
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: 29_029_ef_kira_red.png
+      rect:
+        serializedVersion: 2
+        x: 120
+        y: 95
+        width: 26
+        height: 27
+      alignment: 9
+      pivot: {x: 0, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7620ed1bb8f7fd160800000000000000
+      internalID: 7052495779446784615
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    nameFileIdTable:
+      00_000.png: -4391858265002185789
+      01_001_shadow.png: -6395368495572771588
+      02_002_face_default.png: 6761566002635145170
+      03_003_face_atk.png: 3175457697500850073
+      04_004_body_1.png: -1449290883240719266
+      05_005_body_2.png: 5110177235210041009
+      06_006_body_3.png: -2443355740211826352
+      07_007_body_4.png: 9194026719791024016
+      08_008_body_5.png: -5685329324315196163
+      09_009_body_6.png: 1191233040714952744
+      10_010_body_7.png: -1297609106413311898
+      11_011_body_8.png: 2618102583620215778
+      12_012_body_crack.png: -6945465594186223696
+      13_013_damage_crack.png: -8570430725077113919
+      14_014_atk_body_l1.png: 5097304831801562458
+      15_015_atk_body_l2.png: 5601414420674371525
+      16_016_atk_body_r1.png: -1116759750237114856
+      17_017_atk_body_r2.png: -8357362082774459638
+      18_018_atk_body_l.png: 4984287933216290596
+      19_019_atk_body_r.png: -6631603510965738123
+      20_020_damage_debri.png: -4492126868264640953
+      21_021_ef_hit.png: -3179006731909493325
+      22_022_ef_smoke_1.png: -664679246379513540
+      23_023_ef_smoke_2.png: 6038715323341130216
+      24_024_ef_atk_smoke.png: 3791983764841777637
+      25_025_ef_atk_debri_1.png: 4510812336493470655
+      26_026_ef_atk_debri_2.png: 3981983343243302940
+      27_027_ef_kira_green.png: 7729772854295040912
+      28_028_ef_kira_blue.png: -5730237178255496545
+      29_029_ef_kira_red.png: 7052495779446784615
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

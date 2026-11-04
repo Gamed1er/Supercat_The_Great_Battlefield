@@ -20,7 +20,8 @@ public abstract class CatHeroSummon : EnemyBase {
     protected override void Awake() {
         base.Awake();
         SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
-        if (spriteRenderer.sprite == null) spriteRenderer.sprite = PlaceholderSprite.Get(placeholderColor);
+        // 有 BCU 動畫時 root 的 SpriteRenderer 刻意留空(畫面在子物件上),不補佔位方塊
+        if (spriteRenderer.sprite == null && bcAnim == null) spriteRenderer.sprite = PlaceholderSprite.Get(placeholderColor);
     }
 
     // 由 CatHero 在 Instantiate + ApplyDifficulty 之後立刻呼叫:地圖範圍(邊界判定用)與造成的傷害(貓俠攻擊力的 100%)
@@ -33,8 +34,9 @@ public abstract class CatHeroSummon : EnemyBase {
     public override bool TryApplySlow(float duration) => false;
     public override bool TryApplyTargetLock(Vector2 position, float duration) => false;
 
-    protected override void Die() {
-        base.Die();
+    // 預設的死亡表現(淡出)播完後移除物件;自己有死亡動畫的召喚物(滾石)整個覆寫,自行決定何時移除
+    protected override void PlayDeathPresentation() {
+        base.PlayDeathPresentation();
         Destroy(gameObject, DestroyDelayAfterDeath);
     }
 }

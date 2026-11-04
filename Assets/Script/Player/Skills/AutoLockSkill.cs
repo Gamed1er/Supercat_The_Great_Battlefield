@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-// 貓咪超人的普攻:朝滑鼠游標的世界座標發射子彈,每 1 秒一發
+// 貓咪超人的普攻:朝滑鼠游標的世界座標發射子彈,間隔由 cooldown 參數決定(預設 1 秒)
 // bulletType/onHit/isSuppressed 皆為選用參數(預設維持貓咪超人原本的行為),供其他角色(例如赤井抄太郎)客製子彈種類、命中回呼、暫停開火條件
 public class AutoLockShootSkill : ISkill {
     readonly PlayerBase owner;
@@ -17,12 +17,15 @@ public class AutoLockShootSkill : ISkill {
     public float CooldownMultiplier { get; set; } = 1f;
     public bool IsActive => false; // 瞬發技能,沒有進行中的位移狀態
 
-    const float baseCooldown = 1f;
+    // 攻擊間隔(秒):建構時指定初始值,角色可在戰鬥中動態調整(例如貓咪超人的攻速遞增被動)
+    public float BaseCooldown { get => baseCooldown; set => baseCooldown = value; }
+    float baseCooldown;
 
     float lastFireTime = -Mathf.Infinity;
 
-    public AutoLockShootSkill(PlayerBase owner, GameObject bulletPrefab, float damageMultiplier, BulletType bulletType = BulletType.Normal, Action onHit = null, Func<bool> isSuppressed = null) {
+    public AutoLockShootSkill(PlayerBase owner, GameObject bulletPrefab, float damageMultiplier, BulletType bulletType = BulletType.Normal, Action onHit = null, Func<bool> isSuppressed = null, float cooldown = 1f) {
         this.owner = owner;
+        baseCooldown = cooldown;
         this.bulletPrefab = bulletPrefab;
         this.damageMultiplier = damageMultiplier;
         this.bulletType = bulletType;

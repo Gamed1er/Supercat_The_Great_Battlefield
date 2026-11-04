@@ -10,13 +10,22 @@ public class PhotoCat : PairedBossEnemy {
     [Header("音效")]
     [SerializeField] string castSfxName = "shoot"; // 拍照每顆子彈、閃光燈施放當下播放的音效
 
+    [Header("動畫 (BCU 動畫在子物件的 BcAnimPlayer,走路 00、兩招都播 02 攻擊(動畫本身就是跳躍)、擊退/死亡 03 由 EnemyBase 處理)")]
+    [SerializeField] int castFrame = 26; // 02 攻擊動畫裡閃光出現的影格(30 fps),拍照開火/閃光燈判定都在這一幀觸發
+    [SerializeField] int photoHoldFrame = 30; // 拍照時動畫停在這一幀,等子彈全部射完才繼續播並落地
+    // 起跳/落地用固定速度(單位/秒)移動,動畫播放速率跟著伸縮:起跳剛好在 castFrame 抵達施法高度,落地剛好在最後一幀著地
+    [SerializeField] float verticalMoveSpeed = 10f;
+    [SerializeField] float minVerticalMoveDuration = 0.1f; // 距離很短時的最短移動時間,避免動畫被加速到一閃而過
+    // 02 動畫本身也有往上跳的位移,出招那一幀畫面上的攝影貓比本體位置(rb.position)高這麼多;
+    // 子彈起點、閃光燈判定中心/特效,以及預判閃光燈打不打得到時用的施法點,都以「本體 + 這個偏移」為準
+    [SerializeField] float castOriginYOffset = 1.6f;
+
     [Header("移動 (公式:3 + 難度 * 0.4)")]
     public float moveSpeedBase = 3f;
     public float moveSpeedPerDifficulty = 0.4f;
 
     [Header("垂直起跳施法 (目標高度 = 地圖垂直中心 world y=0,見 LevelManager 地圖置中慣例,± 這個容許誤差)")]
     public float jumpCastYTolerance = 2f;
-    public float verticalMoveSpeed = 6f; // 起跳/落地的垂直移動速度(單位/秒),用速度而不是固定時間,距離不同也能維持一致的平滑感
 
     [Header("地面範圍內縮 (groundMin/groundMax 是牆壁的實際位置,直接走到那邊會卡牆,水平移動要內縮這個距離)")]
     public float groundEdgeMargin = 1f;
@@ -30,9 +39,8 @@ public class PhotoCat : PairedBossEnemy {
     public float photoDamagePercent = 0.5f;
     public float photoStunDuration = 1f;
 
-    [Header("閃光燈 (原地旋轉,單次判定)")]
+    [Header("閃光燈 (播攻擊動畫,閃光那一幀單次判定)")]
     public float flashRadius = 3f;
-    public float flashSpinDuration = 0.8f;
     public float flashDamagePercent = 0.5f;
     public float flashStunDuration = 2f;
     [Range(0f, 1f)] public float flashChanceWhenOutOfRange = 0.25f; // 玩家不在閃光燈範圍內時,仍有這個機率選閃光燈(其餘選拍照)
@@ -101,6 +109,7 @@ public class PhotoCat : PairedBossEnemy {
         float nextX = Mathf.MoveTowards(current.x, targetX, moveSpeed * MoveSpeedMultiplier * Time.fixedDeltaTime);
         nextX = Mathf.Clamp(nextX, groundMin.x + groundEdgeMargin, groundMax.x - groundEdgeMargin);
         rb.MovePosition(new Vector2(nextX, groundY));
+        bcAnim.PlayIfNotPlaying(BcClipWalk);
 
         SetFacing(nextX - current.x);
 
@@ -109,14 +118,14 @@ public class PhotoCat : PairedBossEnemy {
         // 不是目前站的地面高度)」就視為抵達,避免玩家一直跑掉導致永遠放不出來。
         bool arrived = pendingChoice == CastChoice.Photo
             ? Mathf.Abs(nextX - pendingApproachTargetX) <= 0.05f
-            : Vector2.Distance(new Vector2(nextX, pendingCastY), player.transform.position) <= flashRadius;
+            : Vector2.Distance(new Vector2(nextX, pendingCastY + castOriginYOffset), player.transform.position) <= flashRadius;
 
         if (arrived) StartCoroutine(CastCycleRoutine());
     }
 
     void SetFacing(float dx) {
-        if (dx > 0.01f) { facingDirection = Vector2.right; spriteRenderer.flipX = false; }
-        else if (dx < -0.01f) { facingDirection = Vector2.left; spriteRenderer.flipX = true; }
+        if (dx > 0.01f) { facingDirection = Vector2.right; spriteRenderer.flipX = false; bcAnim.SetFacing(true); }
+        else if (dx < -0.01f) { facingDirection = Vector2.left; spriteRenderer.flipX = true; bcAnim.SetFacing(false); }
     }
 
     // 每個週期開始時決定要放哪個技能,以及地面走位目標。閃光燈的「保底」判定用「目前 x + 這次要跳到的高度」預判,
@@ -126,13 +135,13 @@ public class PhotoCat : PairedBossEnemy {
 
         // 玩家跟施法高度的垂直落差本身就大於閃光燈範圍時,不管水平位置怎麼追都不可能進到範圍內,
         // 這種情況直接強制拍照,不讓閃光燈進入候選,避免攝影貓卡在原地一直追、永遠放不出技能。
-        float verticalGapToCastHeight = Mathf.Abs(player.transform.position.y - pendingCastY);
+        float verticalGapToCastHeight = Mathf.Abs(player.transform.position.y - (pendingCastY + castOriginYOffset));
         bool flashReachable = verticalGapToCastHeight <= flashRadius;
 
         if (!flashReachable) {
             pendingChoice = CastChoice.Photo;
         } else {
-            Vector2 predictedCastPos = new Vector2(rb.position.x, pendingCastY);
+            Vector2 predictedCastPos = new Vector2(rb.position.x, pendingCastY + castOriginYOffset);
             bool guaranteedFlash = Vector2.Distance(predictedCastPos, player.transform.position) <= flashRadius;
             pendingChoice = guaranteedFlash || Random.value < flashChanceWhenOutOfRange ? CastChoice.Flash : CastChoice.Photo;
         }
@@ -152,6 +161,9 @@ public class PhotoCat : PairedBossEnemy {
         }
     }
 
+    // 出招那一幀畫面上攝影貓的位置,見 castOriginYOffset
+    Vector2 CastOrigin => rb.position + Vector2.up * castOriginYOffset;
+
     bool IsSideOnCooldown(EdgeSide side) => side == EdgeSide.Left ? leftSideCooldownTimer > 0f : rightSideCooldownTimer > 0f;
     static EdgeSide Opposite(EdgeSide side) => side == EdgeSide.Left ? EdgeSide.Right : EdgeSide.Left;
 
@@ -170,33 +182,52 @@ public class PhotoCat : PairedBossEnemy {
     IEnumerator CastCycleRoutine() {
         isPerformingAction = true;
 
-        Vector2 groundPos = rb.position;
-        yield return MoveVertically(new Vector2(groundPos.x, pendingCastY));
+        // 攻擊動畫本身就是跳躍:第 0 幀起跳,castFrame 出招,之後落地。拍照要在起跳前就轉身面向開火方向
+        if (pendingChoice == CastChoice.Photo) SetFacing(pendingPhotoSide == EdgeSide.Left ? 1f : -1f);
+        bcAnim.Play(BcClipAttack, loop: false);
 
-        if (pendingChoice == CastChoice.Photo) yield return PhotoRoutine();
-        else yield return FlashRoutine();
+        // 起跳:0 → castFrame 從地面升到施法高度
+        yield return MoveWithAnimFrames(rb.position.y, pendingCastY, 0f, castFrame);
+        bcAnim.PlaybackRate = 1f; // 出招段照原速播放
 
-        yield return MoveVertically(new Vector2(rb.position.x, groundY));
+        if (pendingChoice == CastChoice.Photo) {
+            // 動畫播到 photoHoldFrame 就停住,子彈全部射完才繼續;子彈起點固定在出招那一刻的位置
+            bcAnim.HoldFrame = photoHoldFrame;
+            yield return PhotoRoutine();
+            bcAnim.HoldFrame = -1;
+        } else {
+            FlashHit();
+        }
+
+        // 落地:從目前播到的影格 → 最後一幀回到地面
+        yield return MoveWithAnimFrames(pendingCastY, groundY, bcAnim.PlaybackFrame, bcAnim.ClipMaxFrame);
+        yield return new WaitUntil(() => bcAnim.IsDone);
 
         isPerformingAction = false;
         DecideNextCast();
     }
 
-    // 用固定速度(而不是固定時間)移動到目標高度:垂直距離可能因為起跳高度/地面高度不同而差很多,
-    // 固定時間的話距離一大就會看起來像瞬移,固定速度才能不管距離多遠都維持一致的平滑感。
-    IEnumerator MoveVertically(Vector2 to) {
-        while (Vector2.Distance(rb.position, to) > 0.02f) {
-            rb.MovePosition(Vector2.MoveTowards(rb.position, to, verticalMoveSpeed * Time.fixedDeltaTime));
+    // 依攻擊動畫的播放位置,把 y 從 fromY 線性移到 toY(startFrame~endFrame 之間),x 不動。
+    // 移動時間由 verticalMoveSpeed 決定,動畫播放速率跟著調整,讓這段影格剛好在移動結束時播完。
+    // 暈眩時動畫停格(EnemyBase 把 Speed 設 0),移動也會跟著停;擊退/暈眩的打斷則會直接停掉整個協程。
+    IEnumerator MoveWithAnimFrames(float fromY, float toY, float startFrame, int endFrame) {
+        float duration = Mathf.Max(Mathf.Abs(toY - fromY) / verticalMoveSpeed, minVerticalMoveDuration);
+        float animDuration = (endFrame - startFrame) / BcAnimPlayer.FramesPerSecond;
+        if (animDuration > 0f) bcAnim.PlaybackRate = animDuration / duration;
+
+        while (bcAnim.PlaybackFrame < endFrame) {
+            float t = Mathf.InverseLerp(startFrame, endFrame, bcAnim.PlaybackFrame);
+            rb.MovePosition(new Vector2(rb.position.x, Mathf.Lerp(fromY, toY, t)));
             yield return new WaitForFixedUpdate();
         }
-        rb.MovePosition(to);
+        rb.MovePosition(new Vector2(rb.position.x, toY));
     }
 
     // 朝場地另一側橫向掃射:站在哪一側邊界,就往對側開火,5 顆子彈以扇形展開,製造縫隙讓玩家能閃過去
     IEnumerator PhotoRoutine() {
         RegisterPhotoSideUse(pendingPhotoSide);
 
-        Vector2 origin = rb.position;
+        Vector2 origin = CastOrigin;
         Vector2 fireDir = pendingPhotoSide == EdgeSide.Left ? Vector2.right : Vector2.left;
         SetFacing(fireDir.x); // 走位時是面向邊界(背對要開火的方向),開火前轉身面向對側;前/後免傷也跟著用新的面向判斷
         float halfSpan = photoBulletFanDegrees * 0.5f;
@@ -223,15 +254,13 @@ public class PhotoCat : PairedBossEnemy {
         Partner?.OnPartnerHitPlayer();
     }
 
-    // 原地旋轉,轉完瞬間單次判定範圍內的傷害+暈眩(不是持續性判定,見設計討論)
-    IEnumerator FlashRoutine() {
+    // 攻擊動畫閃光那一幀,單次判定範圍內的傷害+暈眩(不是持續性判定,見設計討論)
+    void FlashHit() {
         AudioManager.Instance.PlaySFX(castSfxName); // 施放當下的音效;crit_hit1 是命中判定時爆擊才會另外播放的音效,不是施法音效,兩者不衝突
-        yield return new WaitForSeconds(flashSpinDuration);
-
         SpawnFlashEffect();
 
         bool hitPlayer = false;
-        foreach (Collider2D hit in Physics2D.OverlapCircleAll(rb.position, flashRadius)) {
+        foreach (Collider2D hit in Physics2D.OverlapCircleAll(CastOrigin, flashRadius)) {
             if (!hit.CompareTag("Player")) continue;
 
             float damage = EnemyCritRoll.ComputeDamage(baseAttack * flashDamagePercent, difficulty, player, out bool isCrit);
@@ -247,7 +276,7 @@ public class PhotoCat : PairedBossEnemy {
     // 特效放大到最後的直徑剛好等於閃光燈判定範圍(flashRadius * 2),順便當作範圍提示;sprite 本身寬 1 單位(PPU = 圖片寬度),
     // 所以 prefab 的 localScale 就是起始寬度。這裡只改 growTo(Update 才讀)
     void SpawnFlashEffect() {
-        GameObject effect = Instantiate(flashEffectPrefab, rb.position, Quaternion.identity);
+        GameObject effect = Instantiate(flashEffectPrefab, CastOrigin, Quaternion.identity);
         effect.GetComponent<SmokePuff>().growTo = flashRadius * 2f / effect.transform.localScale.x;
     }
 

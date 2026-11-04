@@ -10,6 +10,9 @@ public class JurassicCat : PairedBossEnemy {
     [SerializeField] string meteorFallSfxName = "shaking2"; // 泰山隕石墜下墜前 meteorFallSfxLeadTime 秒播放,比照 CatHero 墜地拳
     [SerializeField] float meteorFallSfxLeadTime = 0.2f;
 
+    [Header("動畫 (BCU 動畫在子物件的 BcAnimPlayer,走路 00、槌擊/隕石墜播 02 攻擊、擊退/死亡 03 由 EnemyBase 處理)")]
+    [SerializeField] int attackStrikeFrame = 15; // 02 攻擊動畫槌子舉到最高、下一幀就砸地的影格(30 fps)
+
     [Header("移動 (固定值,不隨難度變化)")]
     public float moveSpeed = 9f;
     public float directionCheckInterval = 1f;
@@ -28,7 +31,7 @@ public class JurassicCat : PairedBossEnemy {
     public float meteorCooldown = 20f;
     public float meteorChargeDuration = 0.5f;
     public float meteorLaunchHeight = 6f; // 起飛動畫的垂直位移量,飛到這個高度後隱藏本體(視為離場)
-    public float meteorLaunchSpeed = 15f; // 起飛的垂直移動速度(單位/秒),用速度而不是固定時間,理由同 PhotoCat.verticalMoveSpeed
+    public float meteorLaunchSpeed = 15f; // 起飛的垂直移動速度(單位/秒),用速度而不是固定時間,距離不同也能維持一致的平滑感
     public float meteorWarningDurationDifficulty0 = 1.5f;
     public float meteorWarningDurationDifficulty5 = 0.8f;
     public float meteorWarningTrackDuration = 0.6f; // 警示前這麼多秒追蹤玩家 x,之後鎖定不動
@@ -73,6 +76,8 @@ public class JurassicCat : PairedBossEnemy {
     bool isHammering; // 只有槌擊的空中階段為 true,碰撞傷害判定用
     bool wasPlayerStunnedLastFrame;
     GameObject activeWarningColumn;
+    float footOffset; // 本體位置到腳底的距離,開場時用站立姿勢量一次(動畫姿勢會變,不能每次重量)
+    float bodyWidth;
     float groundY; // 地面遊走的實際高度:地面帶(groundMin~groundMax)的中點,而不是最底部(那是牆壁/地圖邊界的位置)
 
     protected override bool CanBeKnockedBack => !isUninterruptible;
@@ -99,6 +104,10 @@ public class JurassicCat : PairedBossEnemy {
         hammerCooldownTimer = 0f; // 一開始就能放,只要位置條件滿足
         meteorCooldownTimer = meteorCooldown;
         directionCheckTimer = directionCheckInterval;
+
+        Bounds body = bcAnim.GetBounds();
+        footOffset = transform.position.y - body.min.y;
+        bodyWidth = body.size.x;
     }
 
     void Update() {
@@ -154,19 +163,24 @@ public class JurassicCat : PairedBossEnemy {
         else if (nextX >= groundMax.x) { nextX = groundMax.x; wanderDirection = -1; }
 
         rb.MovePosition(new Vector2(nextX, groundY));
+        bcAnim.PlayIfNotPlaying(BcClipWalk);
         SetFacing(wanderDirection);
     }
 
     void SetFacing(float dx) {
-        if (dx > 0.01f) spriteRenderer.flipX = false;
-        else if (dx < 0f) spriteRenderer.flipX = true;
+        if (dx > 0.01f) { spriteRenderer.flipX = false; bcAnim.SetFacing(true); }
+        else if (dx < 0f) { spriteRenderer.flipX = true; bcAnim.SetFacing(false); }
     }
 
-    // 純垂直跳躍,高度公式沿用 DogeEnemy.JumpRoutine 的邏輯(拋物線+難度上限),但 x 全程固定不變
+    // 純垂直跳躍,高度公式沿用 DogeEnemy.JumpRoutine 的邏輯(拋物線+難度上限),但 x 全程固定不變。
+    // 動畫:02 的前 attackStrikeFrame 幀伸縮成「蓄力 + 跳躍」的總時間,落地那一刻剛好播到舉槌的最後一幀,
+    // 接著照原速播完砸地/趴下/站起,播完才回去遊走(這段可以被擊退/暈眩打斷)
     IEnumerator HammerRoutine() {
         isPerformingAction = true;
         isUninterruptible = true;
         AudioManager.Instance.PlaySFX(hammerSfxName);
+        bcAnim.Play(BcClipAttack, loop: false);
+        bcAnim.PlaybackRate = (attackStrikeFrame / BcAnimPlayer.FramesPerSecond) / (hammerWindupDuration + hammerAirDuration);
 
         yield return new WaitForSeconds(hammerWindupDuration);
 
@@ -190,8 +204,11 @@ public class JurassicCat : PairedBossEnemy {
         SpawnLandingEffects(start, hammerLandingEffectScale, hammerLandingEffectDurationScale);
 
         isUninterruptible = false;
-        isPerformingAction = false;
         hammerCooldownTimer = hammerCooldown;
+
+        bcAnim.PlaybackRate = 1f;
+        yield return new WaitUntil(() => bcAnim.IsDone);
+        isPerformingAction = false;
     }
 
     // 只在槌擊空中階段有效的接觸傷害(見 isHammering);侏儸貓平時遊走不會另外造成接觸傷害
@@ -214,6 +231,10 @@ public class JurassicCat : PairedBossEnemy {
         AudioManager.Instance.PlaySFX(meteorSfxName);
         // 掛成子物件,起飛時跟著往上;本體隱藏(離場)時還沒淡完的話一起清掉
         GameObject powerEffect = Instantiate(meteorPowerEffectPrefab, transform);
+        // 蓄力期間播 02 到舉槌的那一幀(剛好在蓄力結束時播到),之後定格,直到開始下墜
+        bcAnim.Play(BcClipAttack, loop: false);
+        bcAnim.HoldFrame = attackStrikeFrame;
+        bcAnim.PlaybackRate = (attackStrikeFrame / BcAnimPlayer.FramesPerSecond) / meteorChargeDuration;
 
         yield return new WaitForSeconds(meteorChargeDuration);
 
@@ -226,6 +247,7 @@ public class JurassicCat : PairedBossEnemy {
 
         if (powerEffect != null) Destroy(powerEffect);
         spriteRenderer.enabled = false;
+        bcAnim.Alpha = 0f;
         if (bodyCollider != null) bodyCollider.enabled = false;
 
         // 地圖以 world y=0 垂直置中,所以地圖頂端 = -groundMin.y(groundMin.y 是地圖最下方,也就是牆壁的位置,見 groundY 的說明)
@@ -260,6 +282,13 @@ public class JurassicCat : PairedBossEnemy {
         transform.position = fallStart;
         if (bodyCollider != null) bodyCollider.enabled = true;
         spriteRenderer.enabled = true;
+        bcAnim.Alpha = 1f;
+
+        // 剩下的動畫(砸地 → 趴下 → 站起)伸縮成整段下墜的時間,落地時剛好播完
+        float fallDuration = Mathf.Max(Vector2.Distance(fallStart, landingPos) / meteorFallSpeed, 0.05f);
+        float remainingAnimDuration = (bcAnim.ClipMaxFrame - bcAnim.PlaybackFrame) / BcAnimPlayer.FramesPerSecond;
+        bcAnim.HoldFrame = -1;
+        if (remainingAnimDuration > 0f) bcAnim.PlaybackRate = remainingAnimDuration / fallDuration;
 
         bool hasHitPlayer = false;
         bool hitPartner = false;
@@ -310,12 +339,10 @@ public class JurassicCat : PairedBossEnemy {
 
     // 落地特效生在腳底高度(sprite 的下緣)、往面向方向偏移 landingEffectForwardOffset 個身寬的位置,
     // 各 sprite 的 pivot 已經在匯入設定調好對齊方式(裂痕/煙塵以中心、泥漿以底部對齊);
-    // 用「目前位置到 sprite 下緣的距離」換算,因為呼叫當下 rb.MovePosition 可能還沒套用到 transform
+    // 腳底高度/身寬用開場時量好的站立姿勢(見 Start),因為落地當下的動畫姿勢不一定是站著的
     void SpawnLandingEffects(Vector2 position, float scale, float durationScale) {
-        Bounds body = spriteRenderer.bounds;
-        float footOffset = transform.position.y - body.min.y;
         float facingSign = spriteRenderer.flipX ? -1f : 1f;
-        Vector2 spawnPos = new Vector2(position.x + facingSign * body.size.x * landingEffectForwardOffset, position.y - footOffset);
+        Vector2 spawnPos = new Vector2(position.x + facingSign * bodyWidth * landingEffectForwardOffset, position.y - footOffset);
 
         foreach (GameObject prefab in new[] { groundCrackEffectPrefab, mudSplashEffectPrefab, shockWaveEffectPrefab, groundAshEffectPrefab }) {
             GameObject effect = Instantiate(prefab, spawnPos, Quaternion.identity);
