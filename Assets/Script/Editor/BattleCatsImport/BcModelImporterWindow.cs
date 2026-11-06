@@ -20,6 +20,7 @@ namespace BattleCatsImport
         private Texture2D sourcePng;
         private float pixelsPerUnit = 100f;
         private string outputFolder = "Assets/Prefabs/BcAnim";
+        private bool oldCustomPack;
 
         [MenuItem("Tools/Battle Cats Import/Import Model From PNG...")]
         private static void Open()
@@ -30,11 +31,15 @@ namespace BattleCatsImport
         private void OnGUI()
         {
             EditorGUILayout.HelpBox(
-                "拖入 BCU 解包出的 xxx.png，同資料夾需有同名的 xxx.imgcut / xxx.mamodel / xxx*.maanim。",
+                "原版解包：拖入 xxx.png，同資料夾需有同名的 xxx.imgcut / xxx.mamodel / xxx*.maanim。\n" +
+                "BCU 自訂動畫包：拖入 sprite.png，同資料夾需有 imgcut.txt / mamodel.txt / maanim_*.txt，輸出檔名用資料夾名稱。",
                 MessageType.Info);
 
             sourcePng = (Texture2D)EditorGUILayout.ObjectField("Source PNG", sourcePng, typeof(Texture2D), false);
             pixelsPerUnit = EditorGUILayout.FloatField("Pixels Per Unit", pixelsPerUnit);
+            oldCustomPack = EditorGUILayout.Toggle(
+                new GUIContent("舊版動畫包 (< BCU 0.7.8.0)", "只影響自訂動畫包：舊版的修改類型 8（整體縮放）要當成 53 處理，跟 BCU 載入舊動畫包的做法相同"),
+                oldCustomPack);
 
             EditorGUILayout.BeginHorizontal();
             outputFolder = EditorGUILayout.TextField("Output Folder", outputFolder);
@@ -70,18 +75,35 @@ namespace BattleCatsImport
         {
             string pngPath = AssetDatabase.GetAssetPath(sourcePng);
             string dir = Path.GetDirectoryName(pngPath)?.Replace('\\', '/');
-            string baseName = Path.GetFileNameWithoutExtension(pngPath);
-            string imgcutPath = $"{dir}/{baseName}.imgcut";
-            string mamodelPath = $"{dir}/{baseName}.mamodel";
+
+            // 兩種來源：原版解包（xxx.png + xxx.imgcut + xxx.mamodel + xxx0N.maanim）
+            // 或 BCU 自訂動畫包（sprite.png + imgcut.txt + mamodel.txt + maanim_*.txt，檔案內容格式跟原版相同，只有檔名不同）
+            bool isCustomPack = IsCustomPack(pngPath, dir);
+            string baseName;
+            string imgcutPath, mamodelPath;
+            (string clipName, string path)[] maanims;
+            if (isCustomPack)
+            {
+                baseName = Path.GetFileName(dir); // 每個動畫包的檔名都一樣，改用資料夾名稱，不然會互相覆蓋
+                imgcutPath = $"{dir}/{PackImgcut}";
+                mamodelPath = $"{dir}/{PackMamodel}";
+                maanims = FindPackMaanims(dir);
+            }
+            else
+            {
+                baseName = Path.GetFileNameWithoutExtension(pngPath);
+                imgcutPath = $"{dir}/{baseName}.imgcut";
+                mamodelPath = $"{dir}/{baseName}.mamodel";
+                maanims = Directory.GetFiles(dir, $"{baseName}*.maanim")
+                    .Select(p => p.Replace('\\', '/'))
+                    .OrderBy(p => p, StringComparer.Ordinal)
+                    .Select(p => (ClipNameFromPath(p, baseName), p))
+                    .ToArray();
+            }
 
             if (!File.Exists(imgcutPath)) throw new FileNotFoundException($"找不到 {imgcutPath}");
             if (!File.Exists(mamodelPath)) throw new FileNotFoundException($"找不到 {mamodelPath}");
-
-            var maanimPaths = Directory.GetFiles(dir, $"{baseName}*.maanim")
-                .Select(p => p.Replace('\\', '/'))
-                .OrderBy(p => p, StringComparer.Ordinal)
-                .ToArray();
-            if (maanimPaths.Length == 0) throw new FileNotFoundException($"{dir} 底下找不到 {baseName}*.maanim");
+            if (maanims.Length == 0) throw new FileNotFoundException($"{dir} 底下找不到任何 maanim");
 
             if (!AssetDatabase.IsValidFolder(outputFolder))
             {
@@ -91,9 +113,14 @@ namespace BattleCatsImport
 
             var cuts = BcFormat.ParseImgcut(imgcutPath);
             var model = BcFormat.ParseModel(mamodelPath);
-            var clips = maanimPaths
-                .Select(p => BcFormat.ParseAnim(p, ClipNameFromPath(p, baseName)))
+            var clips = maanims
+                .Select(m => BcFormat.ParseAnim(m.path, m.clipName))
                 .ToArray();
+            // Source.SourceAnimLoader.getMA：0.7.8.0 以前的動畫包，修改類型 8（整體縮放）要換成 53（gsca）
+            if (isCustomPack && oldCustomPack)
+                foreach (var clip in clips)
+                    foreach (var t in clip.tracks)
+                        if (t.ints[1] == 8) t.ints[1] = 53;
             BcFormat.Sanitize(model, clips, cuts.Count);
 
             var sprites = SliceTexture(pngPath, cuts);
@@ -101,6 +128,47 @@ namespace BattleCatsImport
             BuildPrefab(baseName, set, DefaultClipIndex(clips));
 
             Debug.Log($"[BcModelImporter] 完成：{outputFolder}/{baseName}.prefab（{model.parts.Length} 個零件，{clips.Length} 段動畫：{string.Join(", ", clips.Select(c => c.name))}）");
+        }
+
+        // BCU 自訂動畫包的固定檔名（Source.SourceAnimLoader）
+        private const string PackSprite = "sprite.png";
+        private const string PackImgcut = "imgcut.txt";
+        private const string PackMamodel = "mamodel.txt";
+        // 跟 SourceAnimLoader.MA_ENTITY 同順序；前四個對應原版的 00~03，所以用同樣的名稱，敵人程式碼的 BcClipWalk 等常數可以通用
+        private static readonly (string file, string clipName)[] PackEntityAnims =
+        {
+            ("maanim_walk.txt", "00"),
+            ("maanim_idle.txt", "01"),
+            ("maanim_attack.txt", "02"),
+            ("maanim_kb.txt", "03"),
+            ("maanim_burrow_down.txt", "burrow_down"),
+            ("maanim_burrow_move.txt", "burrow_move"),
+            ("maanim_burrow_up.txt", "burrow_up"),
+        };
+
+        private static bool IsCustomPack(string pngPath, string dir) =>
+            Path.GetFileName(pngPath) == PackSprite
+            && File.Exists($"{dir}/{PackImgcut}")
+            && File.Exists($"{dir}/{PackMamodel}");
+
+        // 先依標準順序找，其他 maanim_*.txt（例如 maanim_soul.txt）接在後面，名稱取 maanim_ 之後那段
+        private static (string clipName, string path)[] FindPackMaanims(string dir)
+        {
+            var result = new List<(string, string)>();
+            var known = new HashSet<string>();
+            foreach (var (file, clipName) in PackEntityAnims)
+            {
+                known.Add(file);
+                string path = $"{dir}/{file}";
+                if (File.Exists(path)) result.Add((clipName, path));
+            }
+            foreach (var path in Directory.GetFiles(dir, "maanim_*.txt").OrderBy(p => p, StringComparer.Ordinal))
+            {
+                string file = Path.GetFileName(path);
+                if (known.Contains(file)) continue;
+                result.Add((Path.GetFileNameWithoutExtension(file).Substring("maanim_".Length), path.Replace('\\', '/')));
+            }
+            return result.ToArray();
         }
 
         // 「149_s02.maanim」→「02」。BC 慣例：00 走路、01 待機、02 攻擊、03 被擊退。
@@ -111,11 +179,14 @@ namespace BattleCatsImport
             return suffix.Length > 0 ? suffix : file;
         }
 
-        // 預設播待機（01），沒有就播第一段。
+        // 預設播待機（01）；01 不存在或是空的（自訂動畫包的子彈常常只做走路/攻擊）就改播 00，都沒有就播第一段。
+        // 空動畫會停在 mamodel 的原始姿勢，所有零件（例如子彈本體和爆炸）全部疊在一起顯示。
         private static int DefaultClipIndex(BcClipData[] clips)
         {
-            int idle = Array.FindIndex(clips, c => c.name == "01");
-            return idle >= 0 ? idle : 0;
+            int idle = Array.FindIndex(clips, c => c.name == "01" && c.tracks.Length > 0);
+            if (idle >= 0) return idle;
+            int walk = Array.FindIndex(clips, c => c.name == "00" && c.tracks.Length > 0);
+            return walk >= 0 ? walk : 0;
         }
 
         // 依 imgcut 把來源 png 切成具名子 Sprite，並回傳以 cut 編號對應的陣列。
