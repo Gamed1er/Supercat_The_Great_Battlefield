@@ -92,6 +92,24 @@ public class BcAnimPlayer : MonoBehaviour
         transform.localPosition = p;
     }
 
+    // 「原圖朝向」下的位置偏移（跟 Prefab 裡填的值同一套座標）。設定時會依目前朝向自動鏡像 x，
+    // 用來在特定招式中暫時改變對齊（例如原版動畫本身會往前位移，導致圖跟碰撞圈錯開）。
+    public Vector2 NaturalLocalOffset
+    {
+        get
+        {
+            var p = transform.localPosition;
+            return new Vector2(transform.localScale.x >= 0f ? p.x : -p.x, p.y);
+        }
+        set
+        {
+            var p = transform.localPosition;
+            p.x = transform.localScale.x >= 0f ? value.x : -value.x;
+            p.y = value.y;
+            transform.localPosition = p;
+        }
+    }
+
     // 目前畫面上所有零件合起來的世界座標範圍（取代單張 SpriteRenderer.bounds）。
     // 會隨動畫姿勢變動，要拿來當固定身形（例如腳底高度）的話，請在站立姿勢時量一次存起來。
     public Bounds GetBounds()

@@ -19,6 +19,10 @@ public class CatHero : EnemyBase {
     [SerializeField] int fallStartFrame = 67;
     [SerializeField] int fallEndFrame = 70;
     [SerializeField] int returnStartFrame = 129;
+    // 原版 02 動畫本身會往前位移,墜地拳期間把動畫子物件改放這個位置(原圖朝向座標,轉向時 x 自動鏡像),
+    // 圖才會跟碰撞圈對齊;招式結束(或被打斷/死亡)時還原成 Prefab 原本的位置
+    [SerializeField] Vector2 fallPunchAnimOffset = new Vector2(0f, -3f);
+    Vector2 defaultAnimOffset;
 
     [Header("音效")]
     [SerializeField] string shootSfxName = "shoot"; // 光彈/超級霰彈每次開火
@@ -159,6 +163,7 @@ public class CatHero : EnemyBase {
         bodyCollider = GetComponent<CircleCollider2D>();
         // 有 BCU 動畫時 root 的 SpriteRenderer 刻意留空(畫面在子物件上),不補佔位方塊
         if (spriteRenderer.sprite == null && bcAnim == null) spriteRenderer.sprite = PlaceholderSprite.Get(placeholderColor);
+        defaultAnimOffset = bcAnim.NaturalLocalOffset;
 
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj != null) player = playerObj.GetComponent<PlayerBase>();
@@ -309,6 +314,7 @@ public class CatHero : EnemyBase {
         isUninterruptible = true;
 
         // 消失:02 的 0~vanishEndFrame 伸縮成往上飛出的時間,飛到頂剛好消失,之後停在消失那一幀
+        bcAnim.NaturalLocalOffset = fallPunchAnimOffset;
         bcAnim.Play(BcClipAttack, loop: false);
         bcAnim.HoldFrame = vanishEndFrame;
         float launchDuration = Mathf.Max(vanishLaunchHeight / vanishLaunchSpeed, 0.05f);
@@ -394,6 +400,7 @@ public class CatHero : EnemyBase {
         isUninterruptible = false;
 
         yield return FlyTo(originalPosition);
+        bcAnim.NaturalLocalOffset = defaultAnimOffset;
         EndSkill();
     }
 
@@ -588,6 +595,7 @@ public class CatHero : EnemyBase {
         isShotgunning = false;
         shield = 0f;
         SetBodyHidden(false);
+        bcAnim.NaturalLocalOffset = defaultAnimOffset;
         ClearWarningColumn();
         idleTimer = IdleInterval;
     }
@@ -608,6 +616,7 @@ public class CatHero : EnemyBase {
     protected override void Die() {
         ClearWarningColumn();
         SetBodyHidden(false);
+        bcAnim.NaturalLocalOffset = defaultAnimOffset;
         shield = 0f;
         foreach (CatHeroSummon summon in summons) {
             if (summon != null) summon.ForceDie();
